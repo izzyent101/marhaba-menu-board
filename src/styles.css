@@ -1,0 +1,872 @@
+:root {
+  color-scheme: dark;
+  --panel: rgba(12, 18, 28, 0.94);
+  --line: rgba(255, 255, 255, 0.12);
+  --accent: #38bdf8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.board {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  user-select: none;
+}
+
+.board.idle {
+  cursor: none;
+}
+
+.bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ---------- infotainment bar ---------- */
+
+.clock-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.2vw;
+  z-index: 5;
+  overflow: hidden;
+  background: linear-gradient(105deg, #03040c 0%, #071228 34%, #0d2148 62%, #1b3a72 100%);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+/* faint starfield on the night side */
+.bar-night {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(1px 1px at 8% 30%, rgba(255, 255, 255, 0.8) 50%, transparent 51%),
+    radial-gradient(1px 1px at 16% 68%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 24% 22%, rgba(255, 255, 255, 0.65) 50%, transparent 51%),
+    radial-gradient(1px 1px at 33% 55%, rgba(255, 255, 255, 0.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 41% 35%, rgba(255, 255, 255, 0.55) 50%, transparent 51%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 38%, transparent 62%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 38%, transparent 62%);
+  pointer-events: none;
+}
+
+/* warm dawn wash on the day side */
+.bar-day {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 55%, rgba(88, 128, 196, 0.28) 78%, rgba(140, 170, 220, 0.34) 100%);
+  pointer-events: none;
+}
+
+/* hairline divider, bright in the middle like the sign's rule */
+.clock-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45) 50%, transparent);
+}
+
+.clock-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.clock-date-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.14em;
+  line-height: 1;
+}
+
+.clock-weekday {
+  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
+  font-weight: 600;
+  color: #8fa8c9;
+}
+
+.clock-date {
+  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
+}
+
+.logo-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.logo-wrap::before {
+  content: '';
+  position: absolute;
+  width: 160%;
+  height: 160%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(120, 160, 220, 0.28), transparent);
+}
+
+.clock-logo {
+  position: relative;
+  width: auto;
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.6));
+}
+
+.clock-time-stack {
+  display: flex;
+  align-items: baseline;
+  gap: 0.16em;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
+  font-weight: 600;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
+}
+
+.clock-time {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+.clock-seconds {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.55;
+}
+
+.clock-meridiem {
+  letter-spacing: 0.18em;
+  opacity: 0.85;
+}
+
+/* ---------- weather capsule ---------- */
+
+.weather {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  line-height: 1;
+  border-radius: 999px;
+  background: rgba(10, 20, 38, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.weather-temp {
+  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
+  font-weight: 600;
+  color: #f4f8ff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.weather-temp sup {
+  font-size: 0.55em;
+  vertical-align: 0.5em;
+  opacity: 0.85;
+}
+
+.weather-divider {
+  width: 1px;
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+}
+
+.weather-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32em;
+}
+
+.weather-desc {
+  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #dbe7f6;
+  white-space: nowrap;
+}
+
+.weather-range {
+  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
+  letter-spacing: 0.1em;
+  color: #9db3cf;
+  white-space: nowrap;
+}
+
+.weather-range .hi,
+.weather-range .lo {
+  font-style: normal;
+  font-size: 0.75em;
+}
+
+.weather-range .hi {
+  color: #ffb454;
+}
+
+.weather-range .lo {
+  color: #7cc4ff;
+}
+
+/* ---------- sign stage ---------- */
+
+.stage {
+  position: absolute;
+  z-index: 3;
+}
+
+.stage .overlay,
+.stage .sign-logo,
+.stage .board-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.stage .board-canvas {
+  z-index: 2;
+}
+
+.stage .sign-logo {
+  left: 12px;
+  top: 728px;
+  width: 284px;
+  height: 188px;
+  inset: auto;
+}
+
+/* ---------- controls ---------- */
+
+.open-dash {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  padding: 12px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(8, 15, 25, 0.75);
+  color: #e2f2ff;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.4s ease;
+}
+
+.open-dash:hover {
+  background: rgba(14, 30, 48, 0.9);
+}
+
+.open-dash.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.drop-hint {
+  position: absolute;
+  inset: 24px;
+  z-index: 30;
+  border: 3px dashed rgba(56, 189, 248, 0.8);
+  border-radius: 24px;
+  background: rgba(6, 22, 40, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  color: #e0f2fe;
+  pointer-events: none;
+}
+
+/* ---------- dashboard ---------- */
+
+.dashboard {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-width: 100vw;
+  z-index: 40;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  color: #e6edf5;
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.dash-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dash-head h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dash-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 18px 18px;
+}
+
+.dash-body section {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.dash-body h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9fb3c8;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 14px;
+}
+
+.field > span {
+  flex: 1;
+}
+
+.field em {
+  font-style: normal;
+  min-width: 46px;
+  text-align: right;
+  color: #9fb3c8;
+  font-size: 12px;
+}
+
+.money {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(2, 8, 16, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.money span {
+  color: #7f97ad;
+}
+
+input[type='number'],
+input[type='text'],
+select {
+  background: transparent;
+  border: none;
+  color: #f1f7ff;
+  font-size: 15px;
+  text-align: right;
+  width: 92px;
+  outline: none;
+}
+
+input[type='text'],
+select {
+  background: rgba(2, 8, 16, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  width: 190px;
+  text-align: left;
+}
+
+input[type='range'] {
+  width: 150px;
+  accent-color: var(--accent);
+}
+
+.tuning {
+  margin-top: 8px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+
+.tuning summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #9fb3c8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+button {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(56, 189, 248, 0.16);
+  color: #dff1ff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: rgba(56, 189, 248, 0.3);
+}
+
+button.ghost {
+  background: transparent;
+}
+
+button.danger {
+  background: rgba(220, 38, 38, 0.25);
+  color: #ffe4e6;
+}
+
+.hint {
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9fb3c8;
+}
+
+.dash-foot {
+  padding: 10px 18px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #7f97ad;
+  text-transform: uppercase;
+}
+
+/* ---------- font + style pickers ---------- */
+
+.picker {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.picker button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: rgba(2, 8, 16, 0.55);
+  border: 1px solid var(--line);
+}
+
+.picker button.active {
+  border-color: var(--accent);
+  background: rgba(56, 189, 248, 0.18);
+}
+
+.picker .sample {
+  flex: 0 0 auto;
+  font-size: 24px;
+  color: #ffffff;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.picker .meta {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.picker .name {
+  font-size: 13px;
+  color: #e6edf5;
+}
+
+.picker .note {
+  font-size: 11px;
+  color: #8ba3ba;
+  white-space: normal;
+}
+
+/* ---------- item rows ---------- */
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.item-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: rgba(2, 8, 16, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  color: #eaf2fb;
+  font-size: 14px;
+  text-align: left;
+  width: auto;
+}
+
+.line-input {
+  display: block;
+  width: 100%;
+  margin: 5px 0;
+  background: rgba(2, 8, 16, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  color: #eaf2fb;
+  font-size: 13px;
+  text-align: left;
+}
+
+/* ---------- animated weather ---------- */
+
+.weather {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  line-height: 1;
+}
+
+.weather-temp {
+  font-family: Cinzel, "Copperplate Gothic Light", Copperplate, Georgia, serif;
+  font-weight: 600;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
+}
+
+.weather-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18em;
+}
+
+.weather-desc {
+  font-family: Cinzel, "Copperplate Gothic Light", Copperplate, Georgia, serif;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.weather-range {
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  font-family: Cinzel, "Copperplate Gothic Light", Copperplate, Georgia, serif;
+}
+
+.wx {
+  overflow: visible;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+}
+
+.wx line,
+.wx circle,
+.wx path {
+  vector-effect: non-scaling-stroke;
+}
+
+.wx-sun {
+  fill: #ffd66b;
+}
+
+.wx-rays line {
+  stroke: #ffd66b;
+  stroke-width: 3.4;
+  stroke-linecap: round;
+}
+
+.wx-rays {
+  transform-origin: 32px 32px;
+  animation: wx-spin 14s linear infinite;
+}
+
+.wx-sun {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: wx-breathe 3.2s ease-in-out infinite;
+}
+
+.wx-rays-sm {
+  transform-origin: 24px 22px;
+}
+
+.wx-moon {
+  fill: #e8eefc;
+}
+
+.wx-star {
+  fill: #ffffff;
+  animation: wx-twinkle 2.2s ease-in-out infinite;
+}
+
+.wx-moon {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: wx-breathe 4.5s ease-in-out infinite;
+}
+
+.wx-cloud {
+  fill: #e6edf6;
+  animation: wx-drift 4.5s ease-in-out infinite;
+}
+
+.wx-cloud-back {
+  fill: #b9c8dc;
+  animation: wx-drift 6s ease-in-out infinite reverse;
+}
+
+.wx-drop {
+  stroke: #8fd0ff;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  animation: wx-fall 0.9s linear infinite;
+}
+
+.wx-rain-soft .wx-drop {
+  animation-duration: 1.7s;
+  opacity: 0.75;
+}
+
+.wx-flake {
+  fill: #eaf6ff;
+  animation: wx-drift-down 2.6s linear infinite;
+}
+
+.wx-bolt {
+  fill: #ffd23f;
+  animation: wx-flash 2.6s ease-in-out infinite;
+}
+
+.wx-fog line {
+  stroke: #dbe6f3;
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  animation: wx-fogshift 5s ease-in-out infinite;
+}
+
+@keyframes wx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wx-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes wx-drift {
+  0%,
+  100% {
+    transform: translate(-5px, 0);
+  }
+  50% {
+    transform: translate(5px, -2px);
+  }
+}
+
+@keyframes wx-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes wx-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes wx-drift-down {
+  0% {
+    opacity: 0;
+    transform: translate(0, -6px);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(3px, 10px);
+  }
+}
+
+@keyframes wx-flash {
+  0%,
+  62%,
+  100% {
+    opacity: 0.35;
+  }
+  66%,
+  74% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes wx-fogshift {
+  0%,
+  100% {
+    transform: translateX(-7px);
+  }
+  50% {
+    transform: translateX(7px);
+  }
+}
+
+/* ---------- weather settings ---------- */
+
+.place-results {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.place-results button {
+  text-align: left;
+  background: rgba(2, 8, 16, 0.55);
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.search-row input {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+/* ---------- update status ---------- */
+
+.update-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #cdd9e8;
+  margin: 4px 0 8px;
+}
+
+.update-status .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #6b7d92;
+  flex: 0 0 auto;
+}
+
+.dot-current,
+.dot-idle {
+  background: #3ecf8e;
+}
+
+.dot-checking,
+.dot-downloading {
+  background: #38bdf8;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.dot-ready {
+  background: #ffb454;
+  box-shadow: 0 0 8px rgba(255, 180, 84, 0.8);
+}
+
+.dot-error {
+  background: #f0616d;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+button.apply {
+  background: rgba(255, 180, 84, 0.28);
+  color: #ffe9c9;
+  border-color: rgba(255, 180, 84, 0.5);
+}

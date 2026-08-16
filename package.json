@@ -1,0 +1,70 @@
+{
+  "name": "marhaba-menu-board",
+  "private": true,
+  "version": "2.0.1",
+  "description": "Marhaba Grill digital menu board - looping video background with live-editable prices",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start:electron": "npm run build && electron .",
+    "dist:win": "npm run build && electron-builder --win nsis portable --x64",
+    "build:preview": "vite build --config vite.config.preview.ts",
+    "publish": "npm run build && electron-builder --win nsis --x64 --publish always"
+  },
+  "dependencies": {
+    "@fontsource/bodoni-moda": "^5.3.0",
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/cormorant-sc": "^5.3.0",
+    "@fontsource/marcellus-sc": "^5.3.0",
+    "@fontsource/playfair-display": "^5.3.0",
+    "electron-updater": "^6.8.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "build": {
+    "appId": "com.marhabagrill.menuboard",
+    "productName": "Marhaba Menu Board",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "verifyUpdateCodeSignature": false,
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Marhaba Menu Board"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "izzyent101",
+      "repo": "marhaba-menu-board",
+      "releaseType": "release"
+    }
+  },
+  "author": "Marhaba Grill"
+}
