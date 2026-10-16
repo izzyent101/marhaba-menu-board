@@ -1,31 +1,44 @@
 import React, { useEffect, useId, useState } from 'react';
-import HEADINGS from '../assets/headings.png';
+import BUFFET from '../assets/cloud-buffet-v2.png';
+import TAKEOUT from '../assets/cloud-takeout-v2.png';
 
-export default function CloudHeadings({ motion }: { motion: boolean }) {
-  const id = `cloud-${useId().replace(/:/g, '')}`;
-  const [reduced, setReduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  useEffect(() => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => setReduced(query.matches);
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
-  const animate = motion && !reduced;
-  return <div className={`cloud-headings ${animate ? 'cloud-headings-moving' : ''}`} role="img" aria-label="All You Can Eat Buffet. Take out by weight.">
-    <svg width="0" height="0" aria-hidden="true">
-      <defs>
-        <filter id={id} x="-2%" y="-3%" width="104%" height="106%" colorInterpolationFilters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency=".012 .028" numOctaves="2" seed="8" result="breeze">
-            {animate && <animate attributeName="baseFrequency" values=".012 .028;.016 .022;.012 .028" dur="24s" repeatCount="indefinite" />}
-          </feTurbulence>
-          <feMorphology in="SourceGraphic" operator="dilate" radius=".6" result="puffs" />
-          <feDisplacementMap in="puffs" in2="breeze" scale="5" xChannelSelector="R" yChannelSelector="G" />
-          <feGaussianBlur stdDeviation=".35" />
-        </filter>
-      </defs>
-    </svg>
-    <div className="cloud-glyphs" style={{ filter: `url(#${id})` }}>
-      <div className="cloud-heading-shape" style={{ maskImage: `url(${HEADINGS})`, WebkitMaskImage: `url(${HEADINGS})` }} />
-    </div>
+interface Bounds { x:number; y:number; width:number; height:number; imageWidth:number; imageHeight:number }
+function CloudLettering({ src, className, label, motion }: { src:string; className:string; label:string; motion:boolean }) {
+  const id=`cloud-volume-${useId().replace(/:/g,'')}`;
+  const [bounds,setBounds]=useState<Bounds>({x:0,y:180,width:2172,height:360,imageWidth:2172,imageHeight:724});
+  useEffect(()=>{
+    let stopped=false;const image=new Image();
+    image.onload=()=>{
+      if(stopped)return;
+      // Measure the generated alpha; the source asset remains intact, including its margins.
+      const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+      const ctx=canvas.getContext('2d');if(!ctx)return;ctx.drawImage(image,0,0);
+      const {data}=ctx.getImageData(0,0,canvas.width,canvas.height);
+      let left=canvas.width,right=0,top=canvas.height,bottom=0;
+      for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++)if(data[(y*canvas.width+x)*4+3]>12){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y)}
+      setBounds({x:Math.max(0,left-8),y:Math.max(0,top-10),width:right-left+17,height:bottom-top+21,imageWidth:canvas.width,imageHeight:canvas.height});
+    };
+    image.src=src;return()=>{stopped=true;image.onload=null};
+  },[src]);
+  return <svg className={`cloud-lettering ${className} ${motion?'cloud-lettering-moving':''}`} viewBox={`${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`} preserveAspectRatio="none" role="img" aria-label={label}>
+    <defs>
+      <filter id={id} x="-3%" y="-10%" width="106%" height="120%" colorInterpolationFilters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency=".006 .012" numOctaves="2" seed={className==='cloud-buffet'?14:29} result="wind">
+          {motion&&<animate attributeName="baseFrequency" values=".006 .012;.008 .009;.006 .012" dur={className==='cloud-buffet'?'26s':'31s'} repeatCount="indefinite"/>}
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="wind" scale="8" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+    <g filter={`url(#${id})`}>
+      <image href={src} width={bounds.imageWidth} height={bounds.imageHeight} />
+    </g>
+  </svg>;
+}
+export default function CloudHeadings({motion}:{motion:boolean}){
+  const [reduced,setReduced]=useState(()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  useEffect(()=>{const query=window.matchMedia('(prefers-reduced-motion: reduce)');const update=()=>setReduced(query.matches);query.addEventListener('change',update);return()=>query.removeEventListener('change',update)},[]);
+  return <div className="cloud-headings cloud-headings-volumetric">
+    <CloudLettering src={BUFFET} className="cloud-buffet" label="All You Can Eat Buffet" motion={motion&&!reduced}/>
+    <CloudLettering src={TAKEOUT} className="cloud-takeout" label="Take Out (by weight)" motion={motion&&!reduced}/>
   </div>;
 }

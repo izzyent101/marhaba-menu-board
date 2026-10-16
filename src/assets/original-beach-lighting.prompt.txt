@@ -1,0 +1,12 @@
+Saved lighting assets (built-in image_gen edits):
+src/assets/original-beach-day-v1.png
+src/assets/original-beach-night-v1.png
+
+Original beach lighting plates
+Built-in image_gen edits of the first frame of the existing background.mp4. Originals preserved. The day image supplies one cloud/foliage field; the night image supplies celestial detail. The existing video supplies the surf motion.
+
+DAY
+Use case: lighting-weather. Edit target: the provided original Marhaba beach scene. Make a MATCHED DAYLIGHT PLATE of this EXACT image for animating the existing restaurant menu background. Preserve the precise viewpoint, 16:9 framing, horizon at 74% of height, shoreline shape, every tree and palm silhouette, beach and the exact water composition. Change only time of day and lighting: clear natural tropical midday blue sky with delicate scattered high clouds, natural turquoise sea, pale golden sand and detailed green foliage. Remove ALL stars and the Milky Way and remove the sunset sun from the right horizon; illuminate from a high daytime sun off camera. Preserve the broad empty sky so menu lettering can sit above the ocean. Photographic, naturally detailed, same landscape, same camera. No text, no logos, no people, no boats, no buildings, no new objects. Do not crop or reposition any coastline or trees. Output one full-frame 16:9 image.
+
+NIGHT
+Use case: lighting-weather. Edit target: provided original Marhaba beach image. Make a MATCHED MOONLIT NIGHT PLATE of this EXACT scene for the original restaurant menu background. Preserve the precise 16:9 camera framing, horizon at 74% from top, every tree and palm silhouette along the left, identical curving shoreline, beach and water composition. Change only lighting and sky from the reference's split day/night sunset into a unified realistic night scene: deep indigo starry sky with a delicate Milky Way, a few thin soft moonlit clouds, natural silvery-blue light on the existing surf and soft dark navy foliage. Replace the sunset sun at the lower right with a small plausible moon higher in the right sky, its center at approximately x=90%, y=57%. Moon must be small, about 1% of image width, no giant moon, no lens flare. Keep dark water and sand readable in moonlight and retain the detailed foamy surf. Remove the orange sunset and all daylight. Preserve the broad open sky for menu text, no text or graphics added. Photographic night, not fantasy, not neon. No new people, boats, buildings or objects. Do not crop or reposition the coastline or the trees. Output one complete full-frame 16:9 image.

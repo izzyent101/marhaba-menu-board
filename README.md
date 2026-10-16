@@ -209,3 +209,15 @@ Eight crossing wave trains now displace the ocean surface. Smaller wind ripples 
 The default hours block is centered at x=545 in the open sky. Saved blocks still using the old x=310 default are migrated without changing their text, prices or other settings; individually positioned or offset blocks keep their custom placement. The storage key stays unchanged.
 
 Both heading graphics now have a soft cloud finish with slow lighting and edge movement. **Cloud-like headings** in the editor restores the original graphics when switched off. Scene pause and reduced-motion preferences also stop the heading animation; custom overlay images stay untouched.
+
+## Original beach and dimensional cloud headings (v2.4)
+
+The owner's original beach composition and `background.mp4` surf loop are retained. The horizon stays at about 74% of the screen, keeping both cloud titles in open sky above the sea.
+
+One photographic cloud and foliage field remains in place throughout the day. A small atmospheric scattering pass evaluates the actual solar direction, extinction and Earth shadow; direct sunlight, sky ambient, blue hour, emerging stars, lunar phase and the moving water's reflection paths share that clock. There are no day/sunset/night picture dissolves. The original 1280×720 surf loop is unchanged. See [continuous lighting implementation and limits](ATMOSPHERE.md).
+
+**Preview a day** in the editor compresses today's actual solar progression into 90 seconds, with pause and a time scrubber. It does not alter the clock, saved lighting mode, prices or hours. Normal Automatic mode runs at the actual time of day, including seasonal sunrise and sunset.
+
+Both headings use separate transparent cloud illustrations with shaded folds and wispy edges in the artwork itself. Gentle displacement animates those shapes. Exact heading prompts are in `src/assets/cloud-typography-v2.prompt.txt`.
+
+The hours default moves left to x=210 with a compact vertical rhythm above the original palm canopy. Untouched previous defaults migrate; custom line placement, edited text and prices are retained. Surf, foliage, sky and cloud lettering pause for reduced motion or the scene pause setting. If GPU lighting fails, the original loop keeps playing with basic lighting and the editor offers a retry.

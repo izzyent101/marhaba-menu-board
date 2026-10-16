@@ -249,7 +249,7 @@ export const FINISHES: { id: TextFinish; label: string; note: string }[] = [
  * rather than letting a wide font push the column toward the middle.
  */
 /** Hours sit in open sky, with their widest line clear of the palm canopy. */
-const HOURS_CENTER = 545;
+const HOURS_CENTER = 210;
 const hoursLine = (
   id: string,
   text: string,
@@ -393,16 +393,15 @@ export const DEFAULT_CONFIG: BoardConfig = {
       offsetX: 0,
       offsetY: 0,
       lines: [
-        // compacted so the whole block clears the tree line in the wave video
-        // (canopy tops: y=474 at the far left, y=641 under the notice)
-        hoursLine('h1', 'Mon - Thurs', 54, 222, 'label'),
-        hoursLine('h2', 'Lunch', 112, 121, 'label'),
-        hoursLine('h3', '11am-2pm', 170, 215, 'time'),
-        hoursLine('h4', 'Dinner', 228, 142, 'label'),
-        hoursLine('h5', '2pm-Close', 286, 250, 'time'),
-        hoursLine('h6', 'Fri - Sun', 344, 161, 'label'),
-        hoursLine('h7', 'Dinner', 402, 142, 'label'),
-        hoursLine('h8', 'All Day', 460, 186, 'time')
+        // Compact vertical rhythm keeps the entire hours block above the original palm canopy.
+        hoursLine('h1', 'Mon - Thurs', 52, 222, 'label'),
+        hoursLine('h2', 'Lunch', 98, 121, 'label'),
+        hoursLine('h3', '11am-2pm', 144, 215, 'time'),
+        hoursLine('h4', 'Dinner', 190, 142, 'label'),
+        hoursLine('h5', '2pm-Close', 236, 250, 'time'),
+        hoursLine('h6', 'Fri - Sun', 282, 161, 'label'),
+        hoursLine('h7', 'Dinner', 328, 142, 'label'),
+        hoursLine('h8', 'All Day', 374, 186, 'time')
       ]
     },
     {
@@ -512,8 +511,13 @@ export function normalizeConfig(input: unknown): BoardConfig {
           if (!savedLine) return line;
           // Carry the old untouched default into the sky without resetting edited hours or prices.
           const migrateHours = block.id === 'hours' && (saved.offsetX ?? 0) === 0 &&
-            saved.lines?.every(l => l.x === 310);
-          return { ...line, ...savedLine, ...(migrateHours ? { x: HOURS_CENTER } : {}) };
+            [210, 310, 545, 875].some(previous => saved.lines?.every(l => l.x === previous));
+          const oldBaselines = [54,112,170,228,286,344,402,460];
+          const migrateHeight = migrateHours && (saved.offsetY ?? 0) === 0 && saved.lines?.every(l => {
+            const index = block.lines.findIndex(baseLine => baseLine.id === l.id);
+            return index >= 0 && l.baseline === oldBaselines[index];
+          });
+          return { ...line, ...savedLine, ...(migrateHours ? { x: HOURS_CENTER } : {}), ...(migrateHeight ? { baseline: line.baseline } : {}) };
         })
       };
     })

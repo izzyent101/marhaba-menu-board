@@ -1,192 +1,208 @@
 export const vertexShader = `
 attribute vec2 aPosition;
-void main() { gl_Position = vec4(aPosition, 0.0, 1.0); }
+varying vec2 vUV;
+void main() { vUV = aPosition * 0.5 + 0.5; gl_Position = vec4(aPosition, 0.0, 1.0); }
 `;
 
-export const fragmentShader = `
+// One fixed camera and one cloud field for every hour. SunCalc azimuth is measured
+// from south: east is left, west is right in this south-facing coastal panorama.
+const viewProjection = `
+const float PI=3.14159265359;
+const float HORIZON=.258;
+vec3 viewRay(vec2 uv) {
+  float az=(uv.x-.5)*3.2;
+  float el=atan((uv.y-HORIZON)*2.2);
+  return vec3(sin(az)*cos(el),sin(el),cos(az)*cos(el));
+}
+float luminance(vec3 c) { return dot(c,vec3(.2126,.7152,.0722)); }
+`;
+
+/** Single scattering, evaluated into a small lighting texture, never per display pixel.
+ * Kilometres throughout: spherical Earth, exponential air/aerosols, ozone absorption,
+ * and planet occlusion of direct sunlight. Multiple scattering is approximated in
+ * the final pass. References and model limits are documented in ATMOSPHERE.md. */
+export const atmosphereShader = `
 precision highp float;
-uniform vec2 uResolution;
-uniform float uTime;
-uniform float uAltitude;
-uniform float uAzimuth;
-uniform float uMoonAltitude;
-uniform float uMoonAzimuth;
-uniform float uMoonPhase;
-uniform sampler2D uGrove;
-uniform float uGroveReady;
-const float PI = 3.14159265359;
-const float HORIZON = 0.34;
-float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
-float noise(vec2 p) {
-  vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
-  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1)),f.x),f.y);
+varying vec2 vUV;
+uniform vec3 uSun;
+${viewProjection}
+const float EARTH=6360.0;
+const float TOP=6420.0;
+const vec3 BETA_R=vec3(.005802,.013558,.033100);
+const vec3 BETA_M=vec3(.001500);
+const vec3 BETA_O=vec3(.000650,.001881,.000085);
+float outerDistance(vec3 p,vec3 ray) {
+  float b=dot(p,ray);
+  return -b+sqrt(max(0.0,b*b-dot(p,p)+TOP*TOP));
 }
-float fbm(vec2 p) {
-  float v=0.0,a=0.5;
-  mat2 turn=mat2(0.8,-0.6,0.6,0.8);
-  for(int i=0;i<5;i++){ v+=a*noise(p); p=turn*p*2.03+12.7; a*=0.5; }
-  return v;
+vec3 density(vec3 p) {
+  float h=max(0.0,length(p)-EARTH);
+  return vec3(exp(-h/8.0),exp(-h/1.2),max(0.0,1.0-abs(h-25.0)/15.0));
 }
-float daylight() { return smoothstep(-0.13,0.16,uAltitude); }
-float golden() { return (1.0-smoothstep(0.02,0.38,uAltitude))*smoothstep(-0.16,-0.015,uAltitude); }
-vec3 sunDirection() {
-  float x=sin(uAzimuth)*0.34;
-  return normalize(vec3(x*uResolution.x/uResolution.y, sin(uAltitude)*0.67, 1.0));
-}
-vec3 moonDirection() {
-  return normalize(vec3(sin(uMoonAzimuth)*0.34*uResolution.x/uResolution.y, sin(uMoonAltitude)*0.67,1.0));
-}
-vec3 sky(vec3 rd, bool detail) {
-  float day=daylight(), gold=golden();
-  float height=max(rd.y,0.0);
-  vec3 zenith=mix(vec3(0.008,0.016,0.047),vec3(0.12,0.40,0.68),day);
-  zenith=mix(zenith,vec3(0.14,0.20,0.39),gold*0.65);
-  vec3 horizon=mix(vec3(0.055,0.092,0.16),vec3(0.67,0.83,0.89),day);
-  horizon=mix(horizon,vec3(1.0,0.48,0.21),gold*0.9);
-  vec3 col=mix(horizon,zenith,pow(clamp(height*1.65,0.0,1.0),0.46));
-  vec3 sd=sunDirection(), md=moonDirection();
-  float sunDot=max(dot(rd,sd),0.0);
-  vec3 sunColor=mix(vec3(1.0,0.93,0.72),vec3(1.0,0.40,0.10),gold*0.8);
-  col+=sunColor*pow(sunDot,14.0)*0.2*day;
-  col+=sunColor*pow(sunDot,120.0)*0.28*day;
-  float sunDisc=smoothstep(0.99986,0.99994,sunDot)*smoothstep(-0.025,0.015,uAltitude);
-  col=mix(col,sunColor*1.8,sunDisc*(detail?1.0:0.12));
-  float moonDot=max(dot(rd,md),0.0);
-  float moon=smoothstep(0.99980,0.99988,moonDot)*smoothstep(-0.02,0.03,uMoonAltitude)*(1.0-day);
-  col+=vec3(0.35,0.48,0.7)*pow(moonDot,180.0)*(1.0-day)*0.25;
-  // Lit portion of the moon, with a shaded limb rather than a glowing white dot.
-  vec3 moonRight=normalize(cross(md,vec3(0,1,0)));
-  vec3 moonUp=normalize(cross(moonRight,md));
-  float mx=dot(rd,moonRight)/0.019, my=dot(rd,moonUp)/0.019;
-  float mz=sqrt(max(0.0,1.0-mx*mx-my*my));
-  float phaseCos=uMoonPhase*2.0-1.0;
-  vec3 moonLight=vec3(sqrt(max(0.0,1.0-phaseCos*phaseCos)),0.0,phaseCos);
-  float lit=smoothstep(-0.04,0.08,dot(vec3(mx,my,mz),moonLight));
-  col=mix(col,vec3(0.66,0.75,0.87)*mix(0.15,1.0,lit),moon);
-  if(detail) {
-    // Fixed celestial positions; only their intensity changes with twilight and cloud cover.
-    vec2 starP=rd.xy/(rd.z+0.2)*850.0;
-    vec2 cell=floor(starP), local=fract(starP)-0.5;
-    float star=smoothstep(0.986,1.0,hash(cell))*exp(-dot(local,local)*90.0);
-    float twinkle=0.75+0.25*sin(uTime*0.65+hash(cell+4.0)*20.0);
-    col+=vec3(0.65,0.76,0.95)*star*twinkle*(1.0-smoothstep(-0.16,-0.04,uAltitude))*smoothstep(0.02,0.18,height);
-  }
-  // Two cloud decks travel independently across the sky and through reflected water.
-  vec2 cp=rd.xz/(height+0.22)*1.7;
-  cp+=vec2(uTime*0.009,uTime*0.003);
-  float cloudBase=fbm(cp);
-  float clouds=smoothstep(0.48,0.73,cloudBase);
-  float wisps=smoothstep(0.58,0.83,fbm(cp*1.65+vec2(uTime*0.004,18.0)))*0.28;
-  clouds=clamp(clouds+wisps,0.0,0.9)*smoothstep(0.0,0.08,height);
-  float edges=smoothstep(0.47,0.56,cloudBase)*(1.0-smoothstep(0.56,0.65,cloudBase));
-  vec3 cloudColor=mix(vec3(0.065,0.09,0.15),vec3(0.92,0.95,0.96),day);
-  cloudColor=mix(cloudColor,vec3(0.78,0.38,0.24)+edges*vec3(0.25,0.22,0.1),gold*0.8);
-  cloudColor*=0.8+cloudBase*0.3;
-  col=mix(col,cloudColor,clouds);
-  return col;
-}
-// Height and slope share eight dispersive wave trains; long swells carry short wind chop.
-vec3 oceanSurface(vec2 p,float distance) {
-  vec2 q=p+vec2(sin(p.y*.17+uTime*.09),sin(p.x*.13-uTime*.07))*.65;
-  float height=0.0, frequency=0.42, amplitude=0.25;
-  vec2 grad=vec2(0.0), direction=normalize(vec2(.25,1.0));
-  mat2 turn=mat2(-.737,-.676,.676,-.737);
-  for(int i=0;i<8;i++) {
-    float phase=dot(q,direction)*frequency-uTime*sqrt(9.81*frequency)+float(i)*2.37;
-    // Suppress ripples smaller than a screen pixel to avoid sparkling noise at the horizon.
-    float footprint=distance*distance/(max(uResolution.y,1.0)*2.8);
-    float attenuation=exp(-min(80.0,footprint*frequency*frequency*.16));
-    float envelope=.8+.2*sin(dot(p,vec2(.08,.11))+float(i)*1.9);
-    float a=amplitude*attenuation*envelope;
-    // The second harmonic sharpens crests and rounds the troughs.
-    height+=a*(sin(phase)+.22*sin(phase*2.0));
-    vec2 slope=direction*a*frequency*(cos(phase)+.44*cos(phase*2.0));
-    grad+=slope;
-    q+=direction*cos(phase)*amplitude*.65;
-    direction=turn*direction;frequency*=1.79;amplitude*=.54;
-  }
-  return vec3(height,grad);
+vec3 extinction(vec3 depth) {
+  return BETA_R*depth.x+BETA_M*1.1*depth.y+BETA_O*depth.z;
 }
 void main() {
-  vec2 uv=gl_FragCoord.xy/uResolution;
-  float aspect=uResolution.x/uResolution.y;
-  vec3 rd=normalize(vec3((uv.x-0.5)*aspect,(uv.y-HORIZON)*1.2,1.0));
-  float day=daylight(),gold=golden();
-  vec3 color;
-  if(uv.y>=HORIZON) {
-    color=sky(rd,true);
-  } else {
-    float depth=(HORIZON-uv.y)/HORIZON;
-    float distance=2.8/max(-rd.y,0.0001);
-    // Intersect the displaced surface, so swells occlude and bend the fine ripples.
-    float planeDistance=distance;
-    for(int i=0;i<2;i++) {
-      float height=oceanSurface(rd.xz*distance,planeDistance).x;
-      float displaced=(2.8-height)/max(-rd.y,.0001);
-      distance=mix(distance,displaced,.65);
+  if(uSun.y<-.31){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}
+  vec3 ray=viewRay(vec2(vUV.x,max(HORIZON+.0003,vUV.y)));
+  vec3 origin=vec3(0.0,EARTH+.005,0.0);
+  float distance=outerDistance(origin,ray);
+  vec3 optical=vec3(0.0),sumR=vec3(0.0),sumM=vec3(0.0);
+  for(int i=0;i<16;i++) {
+    float a=float(i)/16.0,b=float(i+1)/16.0;
+    float ds=(b*b-a*a)*distance;
+    vec3 p=origin+ray*((a*a+b*b)*.5*distance);
+    vec3 local=density(p)*ds;
+    optical+=local*.5;
+    float toSun=dot(p,uSun);
+    float groundHit=toSun*toSun-dot(p,p)+EARTH*EARTH;
+    bool shadow=groundHit>0.0&&toSun<0.0&&-toSun-sqrt(max(0.0,groundHit))>0.0;
+    if(!shadow) {
+      float sunDistance=outerDistance(p,uSun);
+      vec3 sunDepth=vec3(0.0);
+      for(int j=0;j<6;j++) {
+        float c=float(j)/6.0,d=float(j+1)/6.0;
+        sunDepth+=density(p+uSun*((c*c+d*d)*.5*sunDistance))*((d*d-c*c)*sunDistance);
+      }
+      vec3 transmission=exp(-extinction(optical+sunDepth));
+      sumR+=transmission*local.x;
+      sumM+=transmission*local.y;
     }
-    vec2 p=rd.xz*distance;
-    vec3 surface=oceanSurface(p,distance);
-    vec3 normal=normalize(vec3(-surface.y,1.0,-surface.z));
-    vec3 reflected=reflect(rd,normal);
-    reflected.y=abs(reflected.y);
-    vec3 reflection=sky(reflected,false);
-    float fresnel=0.025+0.975*pow(1.0-max(dot(-rd,normal),0.0),4.0);
-    vec3 deep=mix(vec3(0.018,0.055,0.087),vec3(0.025,0.32,0.39),day);
-    deep=mix(deep,vec3(0.08,0.16,0.19),gold*0.65);
-    float shore=0.16+0.22*pow(depth,1.6);
-    float coast=uv.x-shore;
-    float shallow=1.0-smoothstep(0.0,0.28,coast);
-    vec3 shallows=mix(vec3(0.06,0.10,0.13),vec3(0.25,0.63,0.61),day);
-    deep=mix(deep,shallows,shallow*0.7);
-    float trough=clamp(.5+surface.x*1.4,0.0,1.0);
-    deep*=.78+trough*.28;
-    // A little transmitted light makes the thin wave crests turquoise.
-    deep+=vec3(.025,.13,.10)*smoothstep(.03,.25,surface.x)*day*(1.0-fresnel);
-    color=mix(deep,reflection,fresnel*.86);
-    vec3 sd=sunDirection(),md=moonDirection();
-    float glitter=.35+.65*noise(p*7.0+vec2(uTime*.19,0));
-    float sunSpec=(pow(max(dot(reflected,sd),0.0),260.0)*.3+pow(max(dot(reflected,sd),0.0),1100.0)*.5)*day*glitter;
-    float moonSpec=pow(max(dot(reflected,md),0.0),550.0)*glitter*(1.0-day)*smoothstep(0.0,0.1,uMoonAltitude);
-    color+=mix(vec3(1.0,0.91,0.65),vec3(1.0,0.47,0.15),gold)*sunSpec*0.85;
-    color+=vec3(0.45,0.62,0.88)*moonSpec*0.9;
-    // Wave packets refract toward the curved shore; foam trails their breaking crests.
-    float coastalNoise=fbm(vec2(depth*13.0,coast*16.0)+vec2(0,uTime*.025));
-    float breakerPhase=coast*82.0+depth*11.0+uTime*.95+coastalNoise*3.2;
-    float crest=pow(.5+.5*sin(breakerPhase),12.0);
-    float trail=pow(.5+.5*sin(breakerPhase-.85),3.0)*.28;
-    vec2 foamUV=vec2(coast*210.0+uTime*1.3,depth*175.0);
-    float foamNoise=fbm(foamUV);
-    float bubbles=smoothstep(.25,.57,foamNoise);
-    float breakup=smoothstep(.25,.7,fbm(vec2(depth*25.0,coast*30.0)+vec2(uTime*.055,0)));
-    float foam=(crest+trail)*bubbles*(.35+.65*breakup)*(1.0-smoothstep(.015,.16,coast));
-    float wash=.009*sin(uTime*.74+depth*8.0)+.005*sin(uTime*1.21+depth*19.0)+.004*(coastalNoise-.5);
-    float edge=coast-wash;
-    float wet=1.0-smoothstep(-0.055,-0.005,edge);
-    float grain=noise(uv*uResolution*0.6)*0.06+fbm(uv*70.0)*0.08;
-    vec3 sand=mix(vec3(0.14,0.17,0.21),vec3(0.79,0.68,0.48),day);
-    sand=mix(sand,vec3(0.67,0.40,0.22),gold*0.5);
-    sand*=0.83+grain;
-    sand=mix(sand*0.65+reflection*0.2,sand,wet);
-    float edgeFoam=(1.0-smoothstep(0.001,0.008,abs(edge)))*bubbles;
-    color=mix(sand,color,smoothstep(-0.004,0.004,edge));
-    vec3 foamColor=mix(vec3(0.24,0.32,0.40),vec3(0.91,0.96,0.91),day);
-    color=mix(color,foamColor,clamp(foam*.88*smoothstep(0.0,0.012,edge)+edgeFoam*.72,0.0,.9));
-    float haze=exp(-depth*45.0);
-    color=mix(color,sky(normalize(vec3(rd.x,0.005,rd.z)),false)*0.83,haze*0.7);
+    optical+=local*.5;
   }
-  // A photographic grove is relit by this same sky and deformed gently by the breeze.
-  vec2 groveUV=vec2(uv.x/0.65,(uv.y-0.07)/0.90);
-  if(uGroveReady>0.5 && groveUV.x<0.29 && groveUV.y>=0.0 && groveUV.y<=1.0) {
-    float canopy=smoothstep(0.25,0.9,groveUV.y);
-    groveUV.x+=sin(uTime*.56+groveUV.y*8.0)*.0022*canopy;
-    groveUV.y+=sin(uTime*.88+groveUV.x*19.0+groveUV.y*6.0)*.0016*canopy;
-    vec4 grove=texture2D(uGrove,groveUV);
-    vec3 shade=mix(vec3(.10,.16,.24),vec3(1.0),day);
-    shade=mix(shade,vec3(.85,.53,.35),gold*.65);
-    color=mix(color,grove.rgb*shade,grove.a);
+  float mu=dot(ray,uSun),g=.76;
+  float phaseR=3.0/(16.0*PI)*(1.0+mu*mu);
+  float phaseM=(1.0-g*g)/(4.0*PI*pow(max(.001,1.0+g*g-2.0*g*mu),1.5));
+  vec3 radiance=22.0*(BETA_R*phaseR*sumR+BETA_M*phaseM*sumM);
+  // Store display-linear sky radiance in an ordinary RGBA8 texture; interpolation
+  // stays linear. No half-float extension or extra runtime dependency is required.
+  gl_FragColor=vec4(1.0-exp(-radiance*1.9),1.0);
+}
+`;
+
+/** Composite light onto the owner's original moving surf and a single photographic
+ * cloud/foliage plate. No day/sunset/night picture dissolves or cloud morphing. */
+export const fragmentShader = `
+precision highp float;
+varying vec2 vUV;
+uniform sampler2D uFootage;
+uniform sampler2D uDaySky;
+uniform sampler2D uNightSky;
+uniform sampler2D uAtmosphere;
+uniform vec3 uSun;
+uniform vec3 uMoon;
+uniform vec3 uSunColor;
+uniform float uTime;
+uniform float uAltitude;
+uniform float uMoonPhase;
+uniform float uDirect;
+uniform float uAmbient;
+uniform float uMoonLight;
+${viewProjection}
+vec3 linearColor(vec3 rgb) { return pow(max(rgb,vec3(0.0)),vec3(2.2)); }
+float angleDifference(float a,float b) { return atan(sin(a-b),cos(a-b)); }
+void main() {
+  vec2 uv=vUV;
+  vec3 ray=viewRay(uv);
+  float canopy=(1.0-smoothstep(.23,.34,uv.x))*smoothstep(HORIZON+.02,.60,uv.y);
+  vec2 wind=vec2((sin(uTime*.51+uv.y*19.0)+.35*sin(uTime*.83+uv.x*31.0))*.0012,
+    sin(uTime*.44+uv.x*23.0)*.00035)*canopy;
+  float canopyTop=HORIZON+.36*exp(-uv.x*6.5);
+  float clearSky=smoothstep(canopyTop+.025,canopyTop+.11,uv.y);
+  float height=smoothstep(HORIZON,HORIZON+.55,uv.y);
+  vec2 drift=vec2(sin(uTime*.014)*.014,sin(uTime*.011)*.0018)*height*clearSky;
+  vec2 skyUV=clamp(uv+drift+wind,vec2(.001),vec2(.999));
+  vec3 photograph=texture2D(uDaySky,skyUV).rgb;
+
+  // Cloud density and foliage silhouettes come from the same photograph all day.
+  float skyKey=max(smoothstep(.015,.10,photograph.b-max(photograph.r,photograph.g)),smoothstep(.48,.72,photograph.b));
+  float treeEnvelope=(1.0-smoothstep(.30,.37,uv.x))*(1.0-smoothstep(canopyTop,canopyTop+.025,uv.y));
+  float foliage=treeEnvelope*(1.0-skyKey);
+  float skyMask=smoothstep(HORIZON-.003,HORIZON+.005,uv.y)*(1.0-foliage);
+  float cloudRatio=photograph.r/max(.01,photograph.b);
+  float cloudDensity=smoothstep(.23,.92,cloudRatio)*(1.0-treeEnvelope);
+  float cloudAlpha=(1.0-exp(-cloudDensity*2.0))*skyMask;
+  vec3 sky=texture2D(uAtmosphere,vec2(uv.x,max(uv.y,HORIZON+.002))).rgb;
+
+  // A restrained multiple-scattering/airglow approximation carries blue hour
+  // through civil and nautical twilight after the direct sun is below the sea.
+  float sunAz=atan(uSun.x,uSun.z),viewAz=(uv.x-.5)*3.2;
+  float sunward=exp(-pow(angleDifference(viewAz,sunAz)/.95,2.0));
+  float afterglow=exp(-pow((uAltitude+.055)/.085,2.0))*(1.0-smoothstep(.0,.15,uAltitude));
+  float horizonGlow=exp(-max(0.0,ray.y)*6.0);
+  float highSun=smoothstep(.08,.40,uAltitude);
+  vec3 clearDay=max(vec3(0.0),mix(vec3(luminance(sky)),sky,1.25));
+  clearDay*=mix(vec3(.48,.78,1.12),vec3(.92,.98,1.0),horizonGlow);
+  sky=mix(sky*vec3(.46,.58,.96),clearDay,highSun);
+  sky+=afterglow*exp(-max(0.0,ray.y)*4.0)*mix(vec3(.004,.007,.023),vec3(.19,.044,.007),sunward);
+  sky+=vec3(.0018,.0040,.012)+horizonGlow*vec3(.001,.002,.004);
+
+  float starsVisible=1.0-smoothstep(-.24,-.075,uAltitude);
+  if(starsVisible>.001){
+  vec3 night=texture2D(uNightSky,uv).rgb;
+  float starLuma=luminance(night);
+  float starBackground=(luminance(texture2D(uNightSky,uv+vec2(.002,0.0)).rgb)+
+    luminance(texture2D(uNightSky,uv-vec2(.002,0.0)).rgb)+
+    luminance(texture2D(uNightSky,uv+vec2(0.0,.003)).rgb)+
+    luminance(texture2D(uNightSky,uv-vec2(0.0,.003)).rgb))*.25;
+  // Only celestial detail is sampled from the old night artwork, never its clouds,
+  // trees or baked-in moon. It remains behind the moving photographic cloud field.
+  float removeBakedMoon=smoothstep(.026,.046,length((uv-vec2(.897,.570))*vec2(1.0,.5625)));
+  float stars=pow(max(0.0,starLuma-starBackground),1.5)*removeBakedMoon;
+  float galaxyBand=exp(-pow((uv.x-(.38-.37*uv.y))/.12,2.0));
+  float galaxy=smoothstep(.025,.19,starBackground)*galaxyBand*(1.0-smoothstep(-.26,-.14,uAltitude));
+  sky+=(stars*vec3(.14,.19,.29)+galaxy*vec3(.014,.017,.033))*starsVisible;
   }
-  color=pow(max(color,vec3(0.0)),vec3(0.95));
-  gl_FragColor=vec4(color,1.0);
+
+  vec3 cloudAmbient=vec3(.003,.006,.013)+uAmbient*vec3(.34,.42,.55)+uMoonLight*vec3(.13,.17,.26);
+  float warmClouds=exp(-pow(uAltitude/.18,2.0))*sunward;
+  vec3 cloudSun=mix(uSunColor,vec3(1.0,.34,.10),warmClouds*.48)*uDirect;
+  cloudSun+=warmClouds*exp(-pow((uAltitude+.01)/.10,2.0))*vec3(.19,.058,.012);
+  vec3 cloudColor=(cloudAmbient+cloudSun*.72)*mix(.70,1.0,cloudDensity);
+  sky=mix(sky,cloudColor,cloudAlpha);
+
+  // Direct solar disc and lunar phase follow the same directions as their water
+  // reflections. Cloud opacity hides them naturally; neither is baked into a frame.
+  float sunDot=dot(ray,uSun);
+  float sunDisc=smoothstep(cos(.0063),cos(.0045),sunDot)*smoothstep(-.012,.004,uAltitude);
+  sky+=(sunDisc*uSunColor*3.2+exp((sunDot-1.0)*4000.0)*uSunColor*uDirect*.18)*(1.0-cloudAlpha);
+  vec3 moonRight=normalize(cross(vec3(0.0,1.0,0.0),uMoon));
+  vec3 moonUp=cross(uMoon,moonRight);
+  vec2 moonUV=vec2(dot(ray,moonRight),dot(ray,moonUp))/.006;
+  float moonRadius=dot(moonUV,moonUV);
+  if(dot(ray,uMoon)>.99&&moonRadius<1.0) {
+    vec2 litDirection=vec2(dot(uSun,moonRight),dot(uSun,moonUp));
+    litDirection=litDirection/max(.001,length(litDirection));
+    float phaseZ=2.0*uMoonPhase-1.0;
+    vec3 lightDirection=vec3(litDirection*sqrt(max(0.0,1.0-phaseZ*phaseZ)),phaseZ);
+    vec3 normal=vec3(moonUV,sqrt(1.0-moonRadius));
+    float illuminated=smoothstep(-.05,.08,dot(normal,lightDirection));
+    float moonDisc=(1.0-smoothstep(.86,1.0,moonRadius))*illuminated;
+    float lunarDetail=.35+.65*texture2D(uNightSky,vec2(.897,.570)+moonUV*vec2(.0078,.0138)).r;
+    sky+=moonDisc*lunarDetail*vec3(.46,.49,.54)*(1.0-cloudAlpha);
+  }
+
+  vec3 film=texture2D(uFootage,uv+wind).rgb;
+  float luma=luminance(film);
+  float depth=clamp(1.0-uv.y/HORIZON,0.0,1.0);
+  float shoreX=.16+.43*pow(depth,1.4);
+  float sea=smoothstep(shoreX-.03,shoreX+.03,uv.x);
+  float amber=smoothstep(.025,.23,film.r-film.b);
+  vec3 neutral=mix(film,luma*vec3(.94,1.035,1.10),amber*sea*.9);
+  vec3 albedo=mix(linearColor(neutral),linearColor(photograph),smoothstep(HORIZON-.003,HORIZON+.005,uv.y));
+  float nightAdaptation=1.0-smoothstep(-.17,.02,uAltitude);
+  albedo=mix(albedo,vec3(luminance(albedo)),nightAdaptation*.55);
+  vec3 illumination=vec3(.004,.008,.018)+uAmbient*vec3(.31,.41,.56)+uSunColor*uDirect*.92+
+    uMoonLight*vec3(.17,.23,.34);
+  vec3 landAndSea=albedo*illumination;
+  float sunWidth=.045+depth*.19,moonWidth=.035+depth*.13;
+  float sunPath=exp(-pow(angleDifference(viewAz,sunAz)/sunWidth,2.0));
+  float moonPath=exp(-pow(angleDifference(viewAz,atan(uMoon.x,uMoon.z))/moonWidth,2.0));
+  float movingFoam=smoothstep(.25,.82,luma);
+  float reflectionMask=sea*(1.0-smoothstep(HORIZON-.004,HORIZON+.002,uv.y));
+  landAndSea+=reflectionMask*movingFoam*(sunPath*uSunColor*uDirect*.30+
+    moonPath*uMoonLight*vec3(.13,.18,.27));
+  vec3 color=mix(landAndSea,sky,skyMask);
+  gl_FragColor=vec4(pow(clamp(color,0.0,1.0),vec3(1.0/2.2)),1.0);
 }
 `;

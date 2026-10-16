@@ -17,7 +17,7 @@ import HEADINGS from './assets/headings.png';
 import LOGO from './assets/logo.png';
 import LivingCoast from './components/LivingCoast';
 import CloudHeadings from './components/CloudHeadings';
-import { solarScene } from './solar';
+import { solarScene, solarPreviewWindow } from './solar';
 import { nightInk } from './ambience';
 
 declare global {
@@ -56,16 +56,34 @@ function loadConfig(): BoardConfig {
 export default function App() {
   const [sceneUnavailable, setSceneUnavailable] = useState(false);
   const [sceneTime, setSceneTime] = useState(() => new Date());
+  const [preview, setPreview] = useState<{start:number;end:number;progress:number;running:boolean}|null>(null);
   useEffect(() => {
-    const timer = window.setInterval(() => setSceneTime(new Date()), 10000);
+    if (!preview?.running) return;
+    const began=performance.now()-preview.progress*90000;
+    let frame=0,last=0;
+    const tick=(now:number)=>{
+      if(now-last>=100){
+        const progress=Math.min(1,(now-began)/90000);last=now;
+        setPreview(current=>current?{...current,progress,running:progress<1}:null);
+        if(progress===1)return;
+      }
+      frame=requestAnimationFrame(tick);
+    };
+    frame=requestAnimationFrame(tick);
+    return()=>cancelAnimationFrame(frame);
+  },[preview?.running,preview?.start,preview?.end]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setSceneTime(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
   const [config, setConfig] = useState<BoardConfig>(loadConfig);
+  useEffect(()=>setPreview(null),[config.ambience,config.videoSrc]);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [uiVisible, setUiVisible] = useState(true);
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [dragActive, setDragActive] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const fallbackVideoRef = useRef<HTMLVideoElement>(null);
   const objectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -201,18 +219,35 @@ export default function App() {
     top: clockHeight + (viewport.h - clockHeight - DESIGN_HEIGHT * scaleY) / 2
   };
 
-  const scene = solarScene(config.ambience, sceneTime);
+  const previewTime=preview?new Date(preview.start+(preview.end-preview.start)*preview.progress):null;
+  const previewLabel=previewTime?new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}).format(previewTime):'';
+  const scene = solarScene(preview?'auto':config.ambience, previewTime||sceneTime);
   const enhanced = config.ambience !== 'original' && !config.videoSrc && !sceneUnavailable;
-  const displayConfig = useMemo(() => enhanced ? {
+  const labelInk=nightInk('#2c2c2c',scene.night);
+  const displayConfig = useMemo(() => config.ambience !== 'original' && !config.videoSrc ? {
     ...config,
+    halo: true,
     groups: config.groups.map(group => ({ ...group, labelColor: nightInk(group.labelColor, scene.night) }))
-  } : config, [config, enhanced, scene.night]);
+  } : config, [config, labelInk]);
+
+  useEffect(() => {
+    const video = fallbackVideoRef.current;
+    if (!video || !sceneUnavailable || config.ambience === 'original' || config.videoSrc) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => {
+      if (config.ambienceMotion && !reduced.matches && !document.hidden) video.play().catch(() => undefined);
+      else video.pause();
+    };
+    sync(); reduced.addEventListener('change', sync); document.addEventListener('visibilitychange', sync);
+    return () => { reduced.removeEventListener('change', sync); document.removeEventListener('visibilitychange', sync); video.pause(); };
+  }, [sceneUnavailable, config.ambience, config.videoSrc, config.ambienceMotion]);
 
   return (
     <div className={`board ${uiVisible ? '' : 'idle'}`}>
       {!enhanced && <video
+        ref={fallbackVideoRef}
         className="bg-video"
-        style={{ objectFit: config.videoFit }}
+        style={{ objectFit: config.videoFit, filter: sceneUnavailable && config.ambience !== 'original' && !config.videoSrc ? `brightness(${1 - scene.night * .75}) saturate(${1 - scene.night * .4})` : undefined }}
         src={config.videoSrc || BUNDLED_VIDEO}
         autoPlay
         loop
@@ -221,7 +256,7 @@ export default function App() {
       />}
 
       {enhanced && (
-        <LivingCoast scene={scene} motion={config.ambienceMotion} onUnavailable={() => setSceneUnavailable(true)} />
+        <LivingCoast scene={scene} motion={config.ambienceMotion} previewing={!!preview} onUnavailable={() => setSceneUnavailable(true)} />
       )}
 
       {config.clock.enabled && (
@@ -235,6 +270,11 @@ export default function App() {
         {config.logoOnSign && <img className="sign-logo" src={LOGO} alt="" draggable={false} />}
         <BoardCanvas config={displayConfig} scale={Math.max(scaleX, scaleY)} />
       </div>
+
+      {preview&&<div className="solar-preview-badge" role="status">
+        <span>Day preview · {previewLabel}</span>
+        <button onClick={()=>setPreview(null)}>Finish preview</button>
+      </div>}
 
       {dragActive && <div className="drop-hint">Drop a video to use as the background</div>}
 
@@ -252,6 +292,11 @@ export default function App() {
           onPickVideo={() => videoInputRef.current?.click()}
           sceneUnavailable={sceneUnavailable}
           onRetryScene={() => setSceneUnavailable(false)}
+          dayPreview={preview?{time:previewLabel,progress:preview.progress,running:preview.running}:null}
+          onPreviewDay={()=>setPreview({...solarPreviewWindow(),progress:0,running:true})}
+          onFinishPreview={()=>setPreview(null)}
+          onPreviewSeek={progress=>setPreview(current=>current?{...current,progress,running:false}:null)}
+          onPreviewPlay={()=>setPreview(current=>current?{...current,progress:current.progress===1?0:current.progress,running:!current.running}:null)}
         />
       )}
 

@@ -18,6 +18,11 @@ interface Props {
   onPickVideo: () => void;
   sceneUnavailable?: boolean;
   onRetryScene?: () => void;
+  dayPreview?: {time:string;progress:number;running:boolean}|null;
+  onPreviewDay?: ()=>void;
+  onFinishPreview?: ()=>void;
+  onPreviewSeek?: (progress:number)=>void;
+  onPreviewPlay?: ()=>void;
 }
 
 const UPDATE_LABEL: Record<UpdateState['status'], string> = {
@@ -29,7 +34,7 @@ const UPDATE_LABEL: Record<UpdateState['status'], string> = {
   error: "Couldn't check for updates"
 };
 
-export default function Dashboard({ config, onChange, onClose, onPickVideo, sceneUnavailable, onRetryScene }: Props) {
+export default function Dashboard({ config, onChange, onClose, onPickVideo, sceneUnavailable, onRetryScene,dayPreview,onPreviewDay,onFinishPreview,onPreviewSeek,onPreviewPlay }: Props) {
   const bridge = typeof window !== 'undefined' ? window.menuBoard : undefined;
   const [update, setUpdate] = useState<UpdateState | null>(null);
 
@@ -537,8 +542,8 @@ export default function Dashboard({ config, onChange, onClose, onPickVideo, scen
 
         <section>
           <h3>Living beach</h3>
-          {sceneUnavailable && <p className="hint">The live scene could not start. The original beach is playing so your board stays visible. <button onClick={onRetryScene}>Try live scene again</button></p>}
-          <p className="hint">A living coastal scene follows the actual sun and moon over Minneapolis, including seasonal sunrise and sunset. Clouds, waves, reflections, shore foam and palms move together.</p>
+          {sceneUnavailable && <p className="hint">Sky lighting could not start. Your original beach is playing with basic lighting so your board stays visible. <button onClick={onRetryScene}>Try live scene again</button></p>}
+          <p className="hint">Your original beach follows the real Minneapolis sun: gradual dawn, daylight, golden hour, blue hour and night. The same clouds remain in place as sunlight and reflections change.</p>
           <label className="field">
             <span>Lighting</span>
             <select aria-label="Background lighting" value={config.ambience} onChange={e => patch({ ambience: e.target.value as BoardConfig['ambience'] })}>
@@ -550,6 +555,15 @@ export default function Dashboard({ config, onChange, onClose, onPickVideo, scen
               <option value="original">Original video</option>
             </select>
           </label>
+          {!config.videoSrc&&config.ambience!=='original'&&<div className="solar-preview-controls">
+            {dayPreview?<>
+              <label className="field"><span>Preview · {dayPreview.time}</span>
+                <input aria-label="Preview time of day" type="range" min="0" max="1" step="0.001" value={dayPreview.progress} onChange={e=>onPreviewSeek?.(Number(e.target.value))}/>
+              </label>
+              <div className="row"><button onClick={onPreviewPlay}>{dayPreview.running?'Pause preview':'Play preview'}</button><button className="ghost" onClick={onFinishPreview}>Finish preview</button></div>
+            </>:<button className="ghost" onClick={onPreviewDay}>Preview a day</button>}
+            <p className="hint">Preview compresses today's sunlight into 90 seconds. Automatic lighting follows the actual time throughout the day.</p>
+          </div>}
           <label className="field">
             <span>Cloud-like headings</span>
             <input type="checkbox" checked={config.cloudHeadings} onChange={e => patch({ cloudHeadings: e.target.checked })} />
