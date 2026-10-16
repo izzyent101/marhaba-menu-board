@@ -191,3 +191,13 @@ electron/
 | `npm run start:electron` | Run as a desktop window |
 | `npm run dist:win` | Build the Windows installer + portable exe into `release/` |
 | `npm run build:preview` | Build the single-file `preview/index.html` (everything inlined) |
+
+## Living coast (v2.2)
+
+The default background is a live coastal environment. A GPU shader renders the moving ocean, reflected sky, clouds, shore foam, sun, moon and stars together; the bundled palm-grove asset responds to wind and scene lighting. Automatic mode uses Minneapolis sun/moon positions calculated locally, including seasonal daylight, without an additional network service.
+
+In **Edit board → Living beach**, choose Automatic, Dawn, Daylight, Sunset or Moonlight. **Animate the scene** pauses environmental movement; reduced-motion preferences are also respected. **Original video** restores the previous bundled loop. A selected custom video plays unchanged; **Use living scene** switches back to the live coast.
+
+Existing saved prices, layout and fonts are retained. Original charcoal item labels switch to cream during twilight for readability; custom label colors remain unchanged. If the graphics renderer is unavailable or loses its context, the bundled video keeps the board visible and the editor offers a retry button.
+
+The renderer caps output resolution and frame rate, pauses while hidden, and reduces resolution on slower hardware. Validation includes solar timing across seasons and daylight saving changes, browser rendering, motion/reduced motion, graphics failure fallback, resize and original-video selection.

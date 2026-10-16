@@ -15,8 +15,9 @@ import {
 import BUNDLED_VIDEO from './assets/background.mp4';
 import HEADINGS from './assets/headings.png';
 import LOGO from './assets/logo.png';
-import BeachAtmosphere from './components/BeachAtmosphere';
-import { getAtmosphere, nightInk } from './ambience';
+import LivingCoast from './components/LivingCoast';
+import { solarScene } from './solar';
+import { nightInk } from './ambience';
 
 declare global {
   interface Window {
@@ -52,6 +53,7 @@ function loadConfig(): BoardConfig {
 }
 
 export default function App() {
+  const [sceneUnavailable, setSceneUnavailable] = useState(false);
   const [sceneTime, setSceneTime] = useState(() => new Date());
   useEffect(() => {
     const timer = window.setInterval(() => setSceneTime(new Date()), 10000);
@@ -198,28 +200,27 @@ export default function App() {
     top: clockHeight + (viewport.h - clockHeight - DESIGN_HEIGHT * scaleY) / 2
   };
 
-  const atmosphere = getAtmosphere(config.ambience, sceneTime);
-  const enhanced = config.ambience !== 'original';
+  const scene = solarScene(config.ambience, sceneTime);
+  const enhanced = config.ambience !== 'original' && !config.videoSrc && !sceneUnavailable;
   const displayConfig = useMemo(() => enhanced ? {
     ...config,
-    groups: config.groups.map(group => ({ ...group, labelColor: nightInk(group.labelColor, atmosphere.night) }))
-  } : config, [config, enhanced, atmosphere.night]);
+    groups: config.groups.map(group => ({ ...group, labelColor: nightInk(group.labelColor, scene.night) }))
+  } : config, [config, enhanced, scene.night]);
 
   return (
     <div className={`board ${uiVisible ? '' : 'idle'}`}>
-      <video
+      {!enhanced && <video
         className="bg-video"
-        style={{ objectFit: config.videoFit, filter: enhanced ? `brightness(${atmosphere.brightness}) saturate(${atmosphere.saturation})` : undefined }}
+        style={{ objectFit: config.videoFit }}
         src={config.videoSrc || BUNDLED_VIDEO}
         autoPlay
         loop
         muted
         playsInline
-      />
+      />}
 
-      {enhanced && <div className="beach-color" style={{ opacity: atmosphere.night * 0.7 }} aria-hidden="true" />}
-      {enhanced && !config.videoSrc && (
-        <BeachAtmosphere atmosphere={atmosphere} fit={config.videoFit} width={viewport.w} height={viewport.h} motion={config.ambienceMotion} />
+      {enhanced && (
+        <LivingCoast scene={scene} motion={config.ambienceMotion} onUnavailable={() => setSceneUnavailable(true)} />
       )}
 
       {config.clock.enabled && (
@@ -246,6 +247,8 @@ export default function App() {
           onChange={setConfig}
           onClose={() => setDashboardOpen(false)}
           onPickVideo={() => videoInputRef.current?.click()}
+          sceneUnavailable={sceneUnavailable}
+          onRetryScene={() => setSceneUnavailable(false)}
         />
       )}
 

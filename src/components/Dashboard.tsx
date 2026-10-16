@@ -16,6 +16,8 @@ interface Props {
   onChange: (next: BoardConfig) => void;
   onClose: () => void;
   onPickVideo: () => void;
+  sceneUnavailable?: boolean;
+  onRetryScene?: () => void;
 }
 
 const UPDATE_LABEL: Record<UpdateState['status'], string> = {
@@ -27,7 +29,7 @@ const UPDATE_LABEL: Record<UpdateState['status'], string> = {
   error: "Couldn't check for updates"
 };
 
-export default function Dashboard({ config, onChange, onClose, onPickVideo }: Props) {
+export default function Dashboard({ config, onChange, onClose, onPickVideo, sceneUnavailable, onRetryScene }: Props) {
   const bridge = typeof window !== 'undefined' ? window.menuBoard : undefined;
   const [update, setUpdate] = useState<UpdateState | null>(null);
 
@@ -535,7 +537,8 @@ export default function Dashboard({ config, onChange, onClose, onPickVideo }: Pr
 
         <section>
           <h3>Living beach</h3>
-          <p className="hint">Automatic lighting follows Minneapolis time: dawn, daylight, sunset and moonlight. Preview a look below, or choose Original for the untouched video.</p>
+          {sceneUnavailable && <p className="hint">The live scene could not start. The original beach is playing so your board stays visible. <button onClick={onRetryScene}>Try live scene again</button></p>}
+          <p className="hint">A living coastal scene follows the actual sun and moon over Minneapolis, including seasonal sunrise and sunset. Clouds, waves, reflections, shore foam and palms move together.</p>
           <label className="field">
             <span>Lighting</span>
             <select aria-label="Background lighting" value={config.ambience} onChange={e => patch({ ambience: e.target.value as BoardConfig['ambience'] })}>
@@ -548,14 +551,14 @@ export default function Dashboard({ config, onChange, onClose, onPickVideo }: Pr
             </select>
           </label>
           <label className="field">
-            <span>Water shimmer &amp; stars</span>
+            <span>Animate the scene</span>
             <input type="checkbox" checked={config.ambienceMotion} onChange={e => patch({ ambienceMotion: e.target.checked })} />
           </label>
-          <p className="hint">Extra reflections follow the bundled beach. Custom videos receive lighting only. Drag an .mp4 onto the screen or pick a file.</p>
+          <p className="hint">Custom videos play as uploaded. Choose the living scene to restore the animated coast.</p>
           <div className="row">
             <button onClick={onPickVideo}>Choose video…</button>
-            <button className="ghost" onClick={() => patch({ videoSrc: null })}>
-              Use bundled video
+            <button className="ghost" onClick={() => patch({ videoSrc: null, ambience: 'auto' })}>
+              Use living scene
             </button>
           </div>
           <label className="field">

@@ -3,30 +3,38 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const ts = require('typescript');
 const vm = require('node:vm');
-const compiled = ts.transpileModule(readFileSync('src/ambience.ts', 'utf8'), {
-  compilerOptions: { module: ts.ModuleKind.CommonJS }
-}).outputText;
-const sandbox = { exports: {}, Intl };
-vm.runInNewContext(compiled, sandbox);
-const { atmosphereAtHour, restaurantHour, nightInk } = sandbox.exports;
-test('Minneapolis clock handles daylight saving independently of device timezone', () => {
-  assert.equal(restaurantHour(new Date('2026-07-01T17:30:00Z')), 12.5);
-  assert.equal(restaurantHour(new Date('2026-01-01T18:30:00Z')), 12.5);
-  assert.equal(restaurantHour(new Date('2026-10-16T05:00:00Z')), 0);
+function load(file) {
+  const compiled=ts.transpileModule(readFileSync(file,'utf8'),{
+    compilerOptions:{module:ts.ModuleKind.CommonJS,esModuleInterop:true}
+  }).outputText;
+  const sandbox={exports:{},require};vm.runInNewContext(compiled,sandbox);return sandbox.exports;
+}
+const { nightInk }=load('src/ambience.ts');
+const { solarScene }=load('src/solar.ts');
+test('Minneapolis solar clock follows seasonal daylight independently of computer timezone',()=>{
+  const summer=solarScene('auto',new Date('2026-06-21T01:00:00Z'));
+  const winter=solarScene('auto',new Date('2026-12-21T02:00:00Z'));
+  assert.ok(summer.altitude>0,'8pm summer still has sunlight');
+  assert.ok(winter.altitude<0,'8pm winter is dark');
+  assert.ok(summer.night<winter.night);
 });
-test('lighting stays bounded and continuous through midnight and scene boundaries', () => {
-  for (let h=0; h<24; h+=1/60) {
-    const a=atmosphereAtHour(h), b=atmosphereAtHour(h+1/60);
-    for (const key of Object.keys(a)) {
-      assert.ok(Number.isFinite(a[key]) && a[key]>=0 && a[key]<=1.2);
-      assert.ok(Math.abs(a[key]-b[key])<0.02);
-    }
+test('scene is continuous across dates and the daylight saving clock change',()=>{
+  for(const iso of ['2026-10-16T05:00:00Z','2026-11-01T07:00:00Z']) {
+    const t=new Date(iso).getTime();
+    const a=solarScene('auto',new Date(t-1000)),b=solarScene('auto',new Date(t+1000));
+    assert.ok(Math.abs(a.altitude-b.altitude)<0.001);
+    assert.ok(Math.abs(a.night-b.night)<0.001);
   }
-  assert.equal(atmosphereAtHour(24).night,atmosphereAtHour(0).night);
-  assert.equal(atmosphereAtHour(12).night,0);
-  assert.equal(atmosphereAtHour(23).night,1);
 });
-test('night readability preserves custom label colors', () => {
+test('sun is above horizon during day and below horizon during night, without night stars at noon',()=>{
+  assert.ok(solarScene('day').altitude>0);assert.equal(solarScene('day').night,0);
+  assert.ok(solarScene('night').altitude<0);assert.equal(solarScene('night').night,1);
+  for(const mode of ['auto','day','night','sunset','dawn']){
+    const state=solarScene(mode);for(const value of Object.values(state))assert.ok(Number.isFinite(value));
+    assert.ok(state.moonPhase>=0&&state.moonPhase<=1);
+  }
+});
+test('night readability preserves custom label colors',()=>{
   assert.equal(nightInk('#2c2c2c',1),'rgb(244,239,225)');
   assert.equal(nightInk('#ff0000',1),'#ff0000');
 });

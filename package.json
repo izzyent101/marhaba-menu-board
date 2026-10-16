@@ -1,7 +1,7 @@
 {
   "name": "marhaba-menu-board",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Marhaba Grill digital menu board - looping video background with live-editable prices",
   "type": "module",
   "main": "electron/main.cjs",
@@ -25,11 +25,13 @@
     "@fontsource/playfair-display": "^5.3.0",
     "electron-updater": "^6.8.9",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "suncalc": "^1.9.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/suncalc": "^1.9.2",
     "@vitejs/plugin-react": "^4.3.1",
     "electron": "^31.0.0",
     "electron-builder": "^24.13.3",
