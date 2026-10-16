@@ -11,3 +11,5 @@ import '@fontsource/cormorant-garamond/latin-600.css';
 import '@fontsource/playfair-display/latin-600.css';
 import '@fontsource/bodoni-moda/latin-600.css';
 import '@fontsource/marcellus-sc/latin-400.css';
+import '@fontsource/rajdhani/latin-500.css';
+import '@fontsource/manrope/latin-500.css';

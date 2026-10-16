@@ -28,8 +28,9 @@ export default function ClockBar({ clock, weather: weatherConfig,scene }: Props)
   const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
   const monthDay = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
-  const hourMin = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const hourMin = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   const [clockDigits, meridiem] = hourMin.split(' ');
+  const [hours, minutes] = clockDigits.split(':');
   const seconds = String(now.getSeconds()).padStart(2, '0');
 
   const h = clock.height;
@@ -45,10 +46,10 @@ export default function ClockBar({ clock, weather: weatherConfig,scene }: Props)
 
       <div className="clock-left">
         <div className="clock-date-stack">
-          <span className="clock-weekday" style={{ fontSize: h * 0.16 }}>
+          <span className="clock-weekday" style={{ fontSize: h * 0.135 }}>
             {weekday}
           </span>
-          <span className="clock-date" style={{ color: clock.dateColor===INK.ivory?'#f7f5ee':clock.dateColor, fontSize: h * 0.30 }}>
+          <span className="clock-date" style={{ color: clock.dateColor===INK.ivory?'#f7f5ee':clock.dateColor, fontSize: h * 0.37 }}>
             {monthDay}
           </span>
         </div>
@@ -56,7 +57,7 @@ export default function ClockBar({ clock, weather: weatherConfig,scene }: Props)
         {weather && (
           <div className="weather" style={{ marginLeft: h * 0.34, paddingLeft:h * 0.34 }}>
             <WeatherIcon condition={weather.condition} isDay={scene.altitude>-.01} size={h * 0.38} />
-            <span className="weather-temp" style={{ fontSize: h * 0.32 }}>
+            <span className="weather-temp" style={{ fontSize: h * 0.40 }}>
               {weather.temperature}
               <sup>°</sup>
             </span>
@@ -86,19 +87,19 @@ export default function ClockBar({ clock, weather: weatherConfig,scene }: Props)
         </span>
       )}
 
-      <div className="clock-time-stack" style={{ color: clock.timeColor===INK.ivory?'#f7f5ee':clock.timeColor }}>
-        <span className="clock-time" style={{ fontSize: h * 0.43 }}>
-          {clockDigits}
+      <time className="clock-time-stack" dateTime={now.toISOString()} aria-label={`${clockDigits}${clock.seconds?`:${seconds}`:''} ${meridiem}`} style={{ color: clock.timeColor===INK.ivory?'#f7f5ee':clock.timeColor }}>
+        <span className="clock-time" aria-hidden="true" style={{ fontSize: h * 0.66 }}>
+          <span>{hours}</span><span className="clock-colon"><i/><i/></span><span>{minutes}</span>
         </span>
-        {clock.seconds && (
-          <span className="clock-seconds" style={{ fontSize: h * 0.15 }}>
-            :{seconds}
+        <span className={`clock-subdial ${clock.seconds?'':'clock-subdial-no-seconds'}`} aria-hidden="true">
+          {clock.seconds && <span className="clock-seconds" style={{ fontSize: h * 0.26 }}>
+            {seconds}
+          </span>}
+          <span className="clock-meridiem" style={{ fontSize: h * 0.12 }}>
+            {meridiem}
           </span>
-        )}
-        <span className="clock-meridiem" style={{ fontSize: h * 0.15 }}>
-          {meridiem}
         </span>
-      </div>
+      </time>
     </div>
   );
 }

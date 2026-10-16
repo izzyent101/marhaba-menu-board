@@ -51,7 +51,7 @@ body,
   position:absolute;top:0;left:0;right:0;z-index:5;
   display:flex;align-items:center;justify-content:space-between;
   padding:0 2.2vw;overflow:hidden;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-family:Manrope,"Segoe UI",sans-serif;
   -webkit-font-smoothing:antialiased;
   background:linear-gradient(110deg,var(--glass-left),var(--glass-middle) 50%,var(--glass-right));
   -webkit-backdrop-filter:blur(28px) saturate(105%);
@@ -67,22 +67,26 @@ body,
   background:linear-gradient(90deg,#ffffff0d,var(--glass-rim),#ffffff0d);
 }
 .clock-left { display:flex;align-items:center;min-width:0;position:relative;z-index:1; }
-.clock-date-stack { display:flex;flex-direction:column;gap:calc(var(--bar-height) * .075);line-height:1; }
-.clock-weekday { color:var(--glass-accent);font-weight:500;letter-spacing:.045em; }
-.clock-date { font-weight:450;letter-spacing:-.025em; }
+.clock-date-stack { display:flex;flex-direction:column;gap:calc(var(--bar-height) * .055);line-height:1; }
+.clock-weekday { color:var(--glass-accent);font-weight:500;letter-spacing:.17em;text-transform:uppercase; }
+.clock-date { font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;letter-spacing:.01em; }
 .logo-wrap { position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;pointer-events:none;z-index:1; }
 .clock-logo { display:block;width:auto;filter:drop-shadow(0 1px 2px #0003); }
-.clock-time-stack { display:flex;align-items:baseline;gap:0;line-height:1;position:relative;z-index:1;font-weight:400; }
-.clock-time { font-variant-numeric:tabular-nums;letter-spacing:-.035em; }
-.clock-seconds { font-variant-numeric:tabular-nums;min-width:2.2em;margin-left:.22em;opacity:.48; }
-.clock-meridiem { margin-left:.5em;letter-spacing:.045em;font-weight:500;opacity:.68; }
+.clock-time-stack { display:flex;align-items:center;gap:calc(var(--bar-height) * .115);line-height:1;position:relative;z-index:1; }
+.clock-time { display:flex;align-items:center;font-family:Rajdhani,"Arial Narrow",sans-serif;font-weight:500;font-variant-numeric:lining-nums tabular-nums;letter-spacing:.01em;line-height:.9; }
+.clock-colon { display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.14em;width:.22em;height:.6em;margin-top:-.02em;opacity:.8; }
+.clock-colon i { display:block;width:.065em;height:.065em;background:currentColor;border-radius:1px; }
+.clock-subdial { display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--bar-height) * .07);padding-top:calc(var(--bar-height) * .015); }
+.clock-subdial-no-seconds { align-self:flex-end;padding-bottom:calc(var(--bar-height) * .055); }
+.clock-seconds { font-family:Rajdhani,"Arial Narrow",sans-serif;font-weight:500;font-variant-numeric:lining-nums tabular-nums;letter-spacing:.045em;min-width:1.1em;opacity:.62; }
+.clock-meridiem { letter-spacing:.15em;font-weight:500;opacity:.74; }
 .weather { display:flex;align-items:center;gap:calc(var(--bar-height) * .105);line-height:1;position:relative; }
 .weather::before { content:'';position:absolute;left:0;top:8%;height:84%;width:1px;background:#ffffff24; }
-.weather-temp { color:#f7f5ee;font-weight:400;letter-spacing:-.045em;font-variant-numeric:tabular-nums; }
+.weather-temp { color:#f7f5ee;font-family:Rajdhani,"Arial Narrow",sans-serif;font-weight:500;letter-spacing:0;font-variant-numeric:lining-nums tabular-nums; }
 .weather-temp sup { font-size:.6em;vertical-align:.45em;opacity:.8; }
 .weather-meta { display:flex;flex-direction:column;gap:calc(var(--bar-height) * .075);margin-left:calc(var(--bar-height) * .035); }
-.weather-desc { color:#eeeff0;font-weight:450;letter-spacing:.015em;white-space:nowrap; }
-.weather-range { display:flex;gap:.8em;color:var(--glass-accent);font-weight:400;letter-spacing:.015em;white-space:nowrap;opacity:.8; }
+.weather-desc { color:#eeeff0;font-weight:500;letter-spacing:.015em;white-space:nowrap; }
+.weather-range { display:flex;gap:.8em;color:var(--glass-accent);font-weight:500;letter-spacing:.015em;white-space:nowrap;opacity:.8; }
 .clock-bar .wx { filter:none;opacity:.9; }
 @media (prefers-reduced-motion:reduce) { .clock-bar .wx * {animation:none!important} }
 
