@@ -15,6 +15,8 @@ import {
 import BUNDLED_VIDEO from './assets/background.mp4';
 import HEADINGS from './assets/headings.png';
 import LOGO from './assets/logo.png';
+import BeachAtmosphere from './components/BeachAtmosphere';
+import { getAtmosphere, nightInk } from './ambience';
 
 declare global {
   interface Window {
@@ -50,6 +52,11 @@ function loadConfig(): BoardConfig {
 }
 
 export default function App() {
+  const [sceneTime, setSceneTime] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setSceneTime(new Date()), 10000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [config, setConfig] = useState<BoardConfig>(loadConfig);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [uiVisible, setUiVisible] = useState(true);
@@ -94,6 +101,8 @@ export default function App() {
   // Keyboard: D or E opens the dashboard, Esc closes, F fullscreen
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.matches('input, textarea, select') || target.isContentEditable) return;
       const key = e.key.toLowerCase();
       if (key === 'escape') setDashboardOpen(false);
       if (key === 'd' || key === 'e') setDashboardOpen((v) => !v);
@@ -189,17 +198,29 @@ export default function App() {
     top: clockHeight + (viewport.h - clockHeight - DESIGN_HEIGHT * scaleY) / 2
   };
 
+  const atmosphere = getAtmosphere(config.ambience, sceneTime);
+  const enhanced = config.ambience !== 'original';
+  const displayConfig = useMemo(() => enhanced ? {
+    ...config,
+    groups: config.groups.map(group => ({ ...group, labelColor: nightInk(group.labelColor, atmosphere.night) }))
+  } : config, [config, enhanced, atmosphere.night]);
+
   return (
     <div className={`board ${uiVisible ? '' : 'idle'}`}>
       <video
         className="bg-video"
-        style={{ objectFit: config.videoFit }}
+        style={{ objectFit: config.videoFit, filter: enhanced ? `brightness(${atmosphere.brightness}) saturate(${atmosphere.saturation})` : undefined }}
         src={config.videoSrc || BUNDLED_VIDEO}
         autoPlay
         loop
         muted
         playsInline
       />
+
+      {enhanced && <div className="beach-color" style={{ opacity: atmosphere.night * 0.7 }} aria-hidden="true" />}
+      {enhanced && !config.videoSrc && (
+        <BeachAtmosphere atmosphere={atmosphere} fit={config.videoFit} width={viewport.w} height={viewport.h} motion={config.ambienceMotion} />
+      )}
 
       {config.clock.enabled && (
         <ClockBar clock={{ ...config.clock, height: clockHeight }} weather={config.weather} />
@@ -208,7 +229,7 @@ export default function App() {
       <div className="stage" style={stageStyle}>
         <img className="overlay" src={config.overlaySrc || HEADINGS} alt="" draggable={false} />
         {config.logoOnSign && <img className="sign-logo" src={LOGO} alt="" draggable={false} />}
-        <BoardCanvas config={config} scale={Math.max(scaleX, scaleY)} />
+        <BoardCanvas config={displayConfig} scale={Math.max(scaleX, scaleY)} />
       </div>
 
       {dragActive && <div className="drop-hint">Drop a video to use as the background</div>}

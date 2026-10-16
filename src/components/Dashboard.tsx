@@ -534,8 +534,24 @@ export default function Dashboard({ config, onChange, onClose, onPickVideo }: Pr
         </section>
 
         <section>
-          <h3>Background video</h3>
-          <p className="hint">Plays on a plain loop, untouched. Drag an .mp4 onto the screen or pick a file.</p>
+          <h3>Living beach</h3>
+          <p className="hint">Automatic lighting follows Minneapolis time: dawn, daylight, sunset and moonlight. Preview a look below, or choose Original for the untouched video.</p>
+          <label className="field">
+            <span>Lighting</span>
+            <select aria-label="Background lighting" value={config.ambience} onChange={e => patch({ ambience: e.target.value as BoardConfig['ambience'] })}>
+              <option value="auto">Automatic · Minneapolis</option>
+              <option value="dawn">Dawn</option>
+              <option value="day">Daylight</option>
+              <option value="sunset">Sunset</option>
+              <option value="night">Moonlight</option>
+              <option value="original">Original video</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Water shimmer &amp; stars</span>
+            <input type="checkbox" checked={config.ambienceMotion} onChange={e => patch({ ambienceMotion: e.target.checked })} />
+          </label>
+          <p className="hint">Extra reflections follow the bundled beach. Custom videos receive lighting only. Drag an .mp4 onto the screen or pick a file.</p>
           <div className="row">
             <button onClick={onPickVideo}>Choose video…</button>
             <button className="ghost" onClick={() => patch({ videoSrc: null })}>

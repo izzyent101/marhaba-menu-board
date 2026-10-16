@@ -149,6 +149,8 @@ export interface BoardConfig {
   signFit: 'fill' | 'fit';
   videoFit: 'cover' | 'contain';
   videoSrc: string | null;
+  ambience: import('./ambience').AmbienceMode;
+  ambienceMotion: boolean;
   overlaySrc: string | null;
   clock: ClockConfig;
   weather: WeatherConfig;
@@ -304,6 +306,8 @@ export const DEFAULT_CONFIG: BoardConfig = {
   signFit: 'fill',
   videoFit: 'cover',
   videoSrc: null,
+  ambience: 'auto',
+  ambienceMotion: true,
   overlaySrc: null,
   clock: {
     enabled: true,
@@ -465,6 +469,8 @@ export function normalizeConfig(input: unknown): BoardConfig {
   return {
     ...base,
     ...raw,
+    ambience: ['auto', 'dawn', 'day', 'sunset', 'night', 'original'].includes(raw.ambience || '') ? raw.ambience! : 'auto',
+    ambienceMotion: typeof raw.ambienceMotion === 'boolean' ? raw.ambienceMotion : true,
     clock: { ...base.clock, ...(raw.clock || {}) },
     weather: {
       ...base.weather,
