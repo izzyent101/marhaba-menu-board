@@ -7,7 +7,7 @@ function load(file) {
   const compiled=ts.transpileModule(readFileSync(file,'utf8'),{
     compilerOptions:{module:ts.ModuleKind.CommonJS,esModuleInterop:true}
   }).outputText;
-  const sandbox={exports:{},require};vm.runInNewContext(compiled,sandbox);return sandbox.exports;
+  const sandbox={exports:{},structuredClone,require: name => name.startsWith('.') ? load(require('node:path').resolve(require('node:path').dirname(file),name+'.ts')) : require(name)};vm.runInNewContext(compiled,sandbox);return sandbox.exports;
 }
 const { nightInk }=load('src/ambience.ts');
 const { solarScene }=load('src/solar.ts');
@@ -37,4 +37,25 @@ test('sun is above horizon during day and below horizon during night, without ni
 test('night readability preserves custom label colors',()=>{
   assert.equal(nightInk('#2c2c2c',1),'rgb(244,239,225)');
   assert.equal(nightInk('#ff0000',1),'#ff0000');
+});
+
+const { DEFAULT_CONFIG, normalizeConfig, STORAGE_KEY }=load('src/config.ts');
+test('hours defaults clear the palms and migrate untouched saved positions without resetting edits',()=>{
+  const saved=structuredClone(DEFAULT_CONFIG);
+  const hours=saved.blocks.find(b=>b.id==='hours');
+  hours.lines.forEach(line=>line.x=310);
+  hours.lines[2].text='12pm-3pm';saved.groups[0].rows[0].value=24.99;
+  const migrated=normalizeConfig(saved);
+  assert.ok(migrated.blocks.find(b=>b.id==='hours').lines.every(l=>l.x-l.maxWidth/2>365));
+  assert.equal(migrated.blocks.find(b=>b.id==='hours').lines[2].text,'12pm-3pm');
+  assert.equal(migrated.groups[0].rows[0].value,24.99);
+  assert.equal(STORAGE_KEY,'marhaba_board_config_v17');
+  hours.offsetX=27;
+  assert.equal(normalizeConfig(saved).blocks.find(b=>b.id==='hours').lines[0].x,310);
+  hours.offsetX=0;hours.lines[0].x=600;
+  assert.equal(normalizeConfig(saved).blocks.find(b=>b.id==='hours').lines[0].x,600);
+});
+test('cloud headings default on for existing boards and retain the saved choice',()=>{
+  assert.equal(normalizeConfig({}).cloudHeadings,true);
+  assert.equal(normalizeConfig({cloudHeadings:false}).cloudHeadings,false);
 });

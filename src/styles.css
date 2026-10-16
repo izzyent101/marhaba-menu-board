@@ -873,3 +873,15 @@ button.apply {
 
 /* The landscape is rendered as one continuously lit scene. */
 .living-coast, .coastal-palms { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.cloud-headings { position: absolute; inset: 0; pointer-events: none; filter: drop-shadow(0 3px 3px #34475a99); }
+.cloud-glyphs { position: absolute; inset: 0; }
+.cloud-heading-shape {
+  position: absolute; inset: 0;
+  mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat;
+  background: radial-gradient(ellipse at 18% 30%, #fff 0%, #f7fbff 24%, transparent 54%), radial-gradient(ellipse at 75% 65%, #fff 0%, #edf3f8 32%, transparent 65%), linear-gradient(135deg, #d6e3ed, #fff 35%, #d7e2ea 60%, #fff 85%);
+  background-size: 140% 150%;
+}
+.cloud-headings-moving .cloud-heading-shape { animation: cloud-letter-light 19s ease-in-out infinite alternate; }
+@keyframes cloud-letter-light { from { background-position: 0% 15%; } to { background-position: 100% 85%; } }
+@media (prefers-reduced-motion: reduce) { .cloud-headings-moving .cloud-heading-shape { animation: none; } }

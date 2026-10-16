@@ -50,7 +50,7 @@ vec3 sky(vec3 rd, bool detail) {
   col+=sunColor*pow(sunDot,14.0)*0.2*day;
   col+=sunColor*pow(sunDot,120.0)*0.28*day;
   float sunDisc=smoothstep(0.99986,0.99994,sunDot)*smoothstep(-0.025,0.015,uAltitude);
-  col=mix(col,sunColor*1.8,sunDisc);
+  col=mix(col,sunColor*1.8,sunDisc*(detail?1.0:0.12));
   float moonDot=max(dot(rd,md),0.0);
   float moon=smoothstep(0.99980,0.99988,moonDot)*smoothstep(-0.02,0.03,uMoonAltitude)*(1.0-day);
   col+=vec3(0.35,0.48,0.7)*pow(moonDot,180.0)*(1.0-day)*0.25;
@@ -85,18 +85,27 @@ vec3 sky(vec3 rd, bool detail) {
   col=mix(col,cloudColor,clouds);
   return col;
 }
-vec3 waterNormal(vec2 p,float distance) {
-  vec2 grad=vec2(0.0);
-  float frequency=0.8, amplitude=0.11;
-  vec2 direction=normalize(vec2(0.32,1.0));
-  mat2 turn=mat2(0.80,-0.60,0.60,0.80);
-  for(int i=0;i<6;i++) {
-    float phase=dot(p,direction)*frequency-uTime*(0.65+sqrt(frequency)*0.85);
-    float attenuation=1.0/(1.0+distance*frequency*0.004);
-    grad+=direction*cos(phase+sin(phase*0.4)*0.5)*amplitude*frequency*attenuation;
-    direction=turn*direction;frequency*=1.87;amplitude*=0.43;
+// Height and slope share eight dispersive wave trains; long swells carry short wind chop.
+vec3 oceanSurface(vec2 p,float distance) {
+  vec2 q=p+vec2(sin(p.y*.17+uTime*.09),sin(p.x*.13-uTime*.07))*.65;
+  float height=0.0, frequency=0.42, amplitude=0.25;
+  vec2 grad=vec2(0.0), direction=normalize(vec2(.25,1.0));
+  mat2 turn=mat2(-.737,-.676,.676,-.737);
+  for(int i=0;i<8;i++) {
+    float phase=dot(q,direction)*frequency-uTime*sqrt(9.81*frequency)+float(i)*2.37;
+    // Suppress ripples smaller than a screen pixel to avoid sparkling noise at the horizon.
+    float footprint=distance*distance/(max(uResolution.y,1.0)*2.8);
+    float attenuation=exp(-min(80.0,footprint*frequency*frequency*.16));
+    float envelope=.8+.2*sin(dot(p,vec2(.08,.11))+float(i)*1.9);
+    float a=amplitude*attenuation*envelope;
+    // The second harmonic sharpens crests and rounds the troughs.
+    height+=a*(sin(phase)+.22*sin(phase*2.0));
+    vec2 slope=direction*a*frequency*(cos(phase)+.44*cos(phase*2.0));
+    grad+=slope;
+    q+=direction*cos(phase)*amplitude*.65;
+    direction=turn*direction;frequency*=1.79;amplitude*=.54;
   }
-  return normalize(vec3(-grad.x,1.0,-grad.y));
+  return vec3(height,grad);
 }
 void main() {
   vec2 uv=gl_FragCoord.xy/uResolution;
@@ -109,8 +118,16 @@ void main() {
   } else {
     float depth=(HORIZON-uv.y)/HORIZON;
     float distance=2.8/max(-rd.y,0.0001);
+    // Intersect the displaced surface, so swells occlude and bend the fine ripples.
+    float planeDistance=distance;
+    for(int i=0;i<2;i++) {
+      float height=oceanSurface(rd.xz*distance,planeDistance).x;
+      float displaced=(2.8-height)/max(-rd.y,.0001);
+      distance=mix(distance,displaced,.65);
+    }
     vec2 p=rd.xz*distance;
-    vec3 normal=waterNormal(p,distance);
+    vec3 surface=oceanSurface(p,distance);
+    vec3 normal=normalize(vec3(-surface.y,1.0,-surface.z));
     vec3 reflected=reflect(rd,normal);
     reflected.y=abs(reflected.y);
     vec3 reflection=sky(reflected,false);
@@ -122,20 +139,28 @@ void main() {
     float shallow=1.0-smoothstep(0.0,0.28,coast);
     vec3 shallows=mix(vec3(0.06,0.10,0.13),vec3(0.25,0.63,0.61),day);
     deep=mix(deep,shallows,shallow*0.7);
-    color=mix(deep,reflection,fresnel*0.78);
+    float trough=clamp(.5+surface.x*1.4,0.0,1.0);
+    deep*=.78+trough*.28;
+    // A little transmitted light makes the thin wave crests turquoise.
+    deep+=vec3(.025,.13,.10)*smoothstep(.03,.25,surface.x)*day*(1.0-fresnel);
+    color=mix(deep,reflection,fresnel*.86);
     vec3 sd=sunDirection(),md=moonDirection();
-    float sunSpec=pow(max(dot(reflected,sd),0.0),640.0)*day;
-    float moonSpec=pow(max(dot(reflected,md),0.0),420.0)*(1.0-day)*smoothstep(0.0,0.1,uMoonAltitude);
+    float glitter=.35+.65*noise(p*7.0+vec2(uTime*.19,0));
+    float sunSpec=(pow(max(dot(reflected,sd),0.0),260.0)*.3+pow(max(dot(reflected,sd),0.0),1100.0)*.5)*day*glitter;
+    float moonSpec=pow(max(dot(reflected,md),0.0),550.0)*glitter*(1.0-day)*smoothstep(0.0,0.1,uMoonAltitude);
     color+=mix(vec3(1.0,0.91,0.65),vec3(1.0,0.47,0.15),gold)*sunSpec*0.85;
     color+=vec3(0.45,0.62,0.88)*moonSpec*0.9;
-    // Sunlit wave ridges, small ripples, and foam wash share the same moving surface.
-    float ridge=pow(max(0.0,normal.z),2.0);
-    color+=vec3(0.25,0.51,0.54)*ridge*day;
-    float swell=sin(coast*95.0+depth*9.0-uTime*0.8+fbm(vec2(uv.x*8.0,depth*8.0))*2.0);
-    float foam=smoothstep(0.78,1.0,swell)*(1.0-smoothstep(0.015,0.20,coast));
-    float flecks=smoothstep(0.25,0.75,fbm(vec2(uv.x*190.0,uv.y*260.0)+vec2(uTime*.18,0)));
-    foam*=flecks;
-    float wash=0.012*sin(uTime*0.65+depth*7.0)+0.006*sin(uTime*1.13+depth*18.0);
+    // Wave packets refract toward the curved shore; foam trails their breaking crests.
+    float coastalNoise=fbm(vec2(depth*13.0,coast*16.0)+vec2(0,uTime*.025));
+    float breakerPhase=coast*82.0+depth*11.0+uTime*.95+coastalNoise*3.2;
+    float crest=pow(.5+.5*sin(breakerPhase),12.0);
+    float trail=pow(.5+.5*sin(breakerPhase-.85),3.0)*.28;
+    vec2 foamUV=vec2(coast*210.0+uTime*1.3,depth*175.0);
+    float foamNoise=fbm(foamUV);
+    float bubbles=smoothstep(.25,.57,foamNoise);
+    float breakup=smoothstep(.25,.7,fbm(vec2(depth*25.0,coast*30.0)+vec2(uTime*.055,0)));
+    float foam=(crest+trail)*bubbles*(.35+.65*breakup)*(1.0-smoothstep(.015,.16,coast));
+    float wash=.009*sin(uTime*.74+depth*8.0)+.005*sin(uTime*1.21+depth*19.0)+.004*(coastalNoise-.5);
     float edge=coast-wash;
     float wet=1.0-smoothstep(-0.055,-0.005,edge);
     float grain=noise(uv*uResolution*0.6)*0.06+fbm(uv*70.0)*0.08;
@@ -143,10 +168,10 @@ void main() {
     sand=mix(sand,vec3(0.67,0.40,0.22),gold*0.5);
     sand*=0.83+grain;
     sand=mix(sand*0.65+reflection*0.2,sand,wet);
-    float edgeFoam=(1.0-smoothstep(0.001,0.008,abs(edge)))*flecks;
+    float edgeFoam=(1.0-smoothstep(0.001,0.008,abs(edge)))*bubbles;
     color=mix(sand,color,smoothstep(-0.004,0.004,edge));
     vec3 foamColor=mix(vec3(0.24,0.32,0.40),vec3(0.91,0.96,0.91),day);
-    color=mix(color,foamColor,clamp(foam*0.55*smoothstep(0.0,0.015,edge)+edgeFoam*0.8,0.0,0.8));
+    color=mix(color,foamColor,clamp(foam*.88*smoothstep(0.0,0.012,edge)+edgeFoam*.72,0.0,.9));
     float haze=exp(-depth*45.0);
     color=mix(color,sky(normalize(vec3(rd.x,0.005,rd.z)),false)*0.83,haze*0.7);
   }

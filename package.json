@@ -1,7 +1,7 @@
 {
   "name": "marhaba-menu-board",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Marhaba Grill digital menu board - looping video background with live-editable prices",
   "type": "module",
   "main": "electron/main.cjs",

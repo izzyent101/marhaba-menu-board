@@ -151,6 +151,7 @@ export interface BoardConfig {
   videoSrc: string | null;
   ambience: import('./ambience').AmbienceMode;
   ambienceMotion: boolean;
+  cloudHeadings: boolean;
   overlaySrc: string | null;
   clock: ClockConfig;
   weather: WeatherConfig;
@@ -247,12 +248,8 @@ export const FINISHES: { id: TextFinish; label: string; note: string }[] = [
  * the width that line occupied in the PSD - the renderer condenses into it
  * rather than letting a wide font push the column toward the middle.
  */
-/**
- * Hours block: right of the far-left canopy (tree tops sit at y≈474 for x<160;
- * from x≈180 the canopy starts at y≈612+). Each line is centred on the block's
- * own axis, sized up ~15% from the sign.
- */
-const HOURS_CENTER = 310;
+/** Hours sit in open sky, with their widest line clear of the palm canopy. */
+const HOURS_CENTER = 545;
 const hoursLine = (
   id: string,
   text: string,
@@ -308,6 +305,7 @@ export const DEFAULT_CONFIG: BoardConfig = {
   videoSrc: null,
   ambience: 'auto',
   ambienceMotion: true,
+  cloudHeadings: true,
   overlaySrc: null,
   clock: {
     enabled: true,
@@ -471,6 +469,7 @@ export function normalizeConfig(input: unknown): BoardConfig {
     ...raw,
     ambience: ['auto', 'dawn', 'day', 'sunset', 'night', 'original'].includes(raw.ambience || '') ? raw.ambience! : 'auto',
     ambienceMotion: typeof raw.ambienceMotion === 'boolean' ? raw.ambienceMotion : true,
+    cloudHeadings: typeof raw.cloudHeadings === 'boolean' ? raw.cloudHeadings : true,
     clock: { ...base.clock, ...(raw.clock || {}) },
     weather: {
       ...base.weather,
@@ -511,7 +510,10 @@ export function normalizeConfig(input: unknown): BoardConfig {
         lines: block.lines.map((line) => {
           const savedLine = saved.lines?.find((l) => l?.id === line.id);
           if (!savedLine) return line;
-          return { ...line, ...savedLine };
+          // Carry the old untouched default into the sky without resetting edited hours or prices.
+          const migrateHours = block.id === 'hours' && (saved.offsetX ?? 0) === 0 &&
+            saved.lines?.every(l => l.x === 310);
+          return { ...line, ...savedLine, ...(migrateHours ? { x: HOURS_CENTER } : {}) };
         })
       };
     })

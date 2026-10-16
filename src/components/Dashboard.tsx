@@ -551,6 +551,10 @@ export default function Dashboard({ config, onChange, onClose, onPickVideo, scen
             </select>
           </label>
           <label className="field">
+            <span>Cloud-like headings</span>
+            <input type="checkbox" checked={config.cloudHeadings} onChange={e => patch({ cloudHeadings: e.target.checked })} />
+          </label>
+          <label className="field">
             <span>Animate the scene</span>
             <input type="checkbox" checked={config.ambienceMotion} onChange={e => patch({ ambienceMotion: e.target.checked })} />
           </label>

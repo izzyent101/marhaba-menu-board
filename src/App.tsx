@@ -16,6 +16,7 @@ import BUNDLED_VIDEO from './assets/background.mp4';
 import HEADINGS from './assets/headings.png';
 import LOGO from './assets/logo.png';
 import LivingCoast from './components/LivingCoast';
+import CloudHeadings from './components/CloudHeadings';
 import { solarScene } from './solar';
 import { nightInk } from './ambience';
 
@@ -228,7 +229,9 @@ export default function App() {
       )}
 
       <div className="stage" style={stageStyle}>
-        <img className="overlay" src={config.overlaySrc || HEADINGS} alt="" draggable={false} />
+        {config.cloudHeadings && !config.overlaySrc
+          ? <CloudHeadings motion={config.ambienceMotion} />
+          : <img className="overlay" src={config.overlaySrc || HEADINGS} alt="" draggable={false} />}
         {config.logoOnSign && <img className="sign-logo" src={LOGO} alt="" draggable={false} />}
         <BoardCanvas config={displayConfig} scale={Math.max(scaleX, scaleY)} />
       </div>

@@ -201,3 +201,11 @@ In **Edit board → Living beach**, choose Automatic, Dawn, Daylight, Sunset or 
 Existing saved prices, layout and fonts are retained. Original charcoal item labels switch to cream during twilight for readability; custom label colors remain unchanged. If the graphics renderer is unavailable or loses its context, the bundled video keeps the board visible and the editor offers a retry button.
 
 The renderer caps output resolution and frame rate, pauses while hidden, and reduces resolution on slower hardware. Validation includes solar timing across seasons and daylight saving changes, browser rendering, motion/reduced motion, graphics failure fallback, resize and original-video selection.
+
+## Water and cloud headings (v2.3)
+
+Eight crossing wave trains now displace the ocean surface. Smaller wind ripples ride on the larger swells, with filtered distant detail, fragmented highlights, and breaking foam that disperses toward shore. The sky and palms retain their existing composition.
+
+The default hours block is centered at x=545 in the open sky. Saved blocks still using the old x=310 default are migrated without changing their text, prices or other settings; individually positioned or offset blocks keep their custom placement. The storage key stays unchanged.
+
+Both heading graphics now have a soft cloud finish with slow lighting and edge movement. **Cloud-like headings** in the editor restores the original graphics when switched off. Scene pause and reduced-motion preferences also stop the heading animation; custom overlay images stay untouched.
