@@ -56,7 +56,7 @@ function loadConfig(): BoardConfig {
 export default function App() {
   const [sceneUnavailable, setSceneUnavailable] = useState(false);
   const [sceneTime, setSceneTime] = useState(() => new Date());
-  const [preview, setPreview] = useState<{start:number;end:number;progress:number;running:boolean}|null>(null);
+  const [preview, setPreview] = useState<{start:number;end:number;progress:number;running:boolean;complete?:boolean}|null>(null);
   useEffect(() => {
     if (!preview?.running) return;
     const began=performance.now()-preview.progress*90000;
@@ -64,7 +64,7 @@ export default function App() {
     const tick=(now:number)=>{
       if(now-last>=100){
         const progress=Math.min(1,(now-began)/90000);last=now;
-        setPreview(current=>current?{...current,progress,running:progress<1}:null);
+        setPreview(current=>current?{...current,progress,running:progress<1,complete:progress===1}:null);
         if(progress===1)return;
       }
       frame=requestAnimationFrame(tick);
@@ -72,6 +72,11 @@ export default function App() {
     frame=requestAnimationFrame(tick);
     return()=>cancelAnimationFrame(frame);
   },[preview?.running,preview?.start,preview?.end]);
+  useEffect(()=>{
+    if(!preview?.complete)return;
+    const timer=window.setTimeout(()=>setPreview(null),8000);
+    return()=>window.clearTimeout(timer);
+  },[preview?.complete]);
   useEffect(() => {
     const timer = window.setInterval(() => setSceneTime(new Date()), 1000);
     return () => window.clearInterval(timer);
@@ -295,8 +300,8 @@ export default function App() {
           dayPreview={preview?{time:previewLabel,progress:preview.progress,running:preview.running}:null}
           onPreviewDay={()=>setPreview({...solarPreviewWindow(),progress:0,running:true})}
           onFinishPreview={()=>setPreview(null)}
-          onPreviewSeek={progress=>setPreview(current=>current?{...current,progress,running:false}:null)}
-          onPreviewPlay={()=>setPreview(current=>current?{...current,progress:current.progress===1?0:current.progress,running:!current.running}:null)}
+          onPreviewSeek={progress=>setPreview(current=>current?{...current,progress,running:false,complete:false}:null)}
+          onPreviewPlay={()=>setPreview(current=>current?{...current,progress:current.progress===1?0:current.progress,running:!current.running,complete:false}:null)}
         />
       )}
 

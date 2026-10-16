@@ -216,7 +216,7 @@ The owner's original beach composition and `background.mp4` surf loop are retain
 
 One photographic cloud and foliage field remains in place throughout the day. A small atmospheric scattering pass evaluates the actual solar direction, extinction and Earth shadow; direct sunlight, sky ambient, blue hour, emerging stars, lunar phase and the moving water's reflection paths share that clock. There are no day/sunset/night picture dissolves. The original 1280×720 surf loop is unchanged. See [continuous lighting implementation and limits](ATMOSPHERE.md).
 
-**Preview a day** in the editor compresses today's actual solar progression into 90 seconds, with pause and a time scrubber. It does not alter the clock, saved lighting mode, prices or hours. Normal Automatic mode runs at the actual time of day, including seasonal sunrise and sunset.
+**Preview a day** in the editor compresses today's actual solar progression into 90 seconds, with pause and a time scrubber. It does not alter the clock, saved lighting mode, prices or hours. Normal Automatic mode runs at the actual time of day, including seasonal sunrise and sunset. A completed preview returns to the selected mode after eight seconds; a manually paused or scrubbed preview stays paused until finished.
 
 Both headings use separate transparent cloud illustrations with shaded folds and wispy edges in the artwork itself. Gentle displacement animates those shapes. Exact heading prompts are in `src/assets/cloud-typography-v2.prompt.txt`.
 

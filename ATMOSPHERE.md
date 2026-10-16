@@ -8,7 +8,7 @@ The old picture dissolve is removed. One daytime photograph supplies the foliage
 
 Automatic mode calculates SunCalc sun and moon altitude, azimuth and lunar illumination for Minneapolis. It updates every second. The renderer interpolates angular directions over a fraction of a second, rather than interpolating day/night pictures. The camera faces south, so morning light is on the left and evening light is on the right. Disc directions, water reflection paths and direct illumination share these inputs. The illustrated star field is decorative and is not an astronomical star catalogue.
 
-The temporary day preview samples today's actual solar clock from nine hours before local solar noon to ten hours after it. It plays in 90 seconds, can be paused or scrubbed, and never modifies the real clock or saves a simulated time. Normal Automatic mode progresses over the real day; it does not run the accelerated preview loop. Finishing the preview restores the selected lighting mode.
+The temporary day preview samples today's actual solar clock from nine hours before local solar noon to ten hours after it. It plays in 90 seconds, can be paused or scrubbed, and never modifies the real clock or saves a simulated time. Normal Automatic mode progresses over the real day; it does not run the accelerated preview loop. Finishing the preview restores the selected lighting mode. Completing playback returns to that mode after an eight-second night hold; scrubbing or pausing cancels that automatic return.
 
 ## Atmospheric pass
 

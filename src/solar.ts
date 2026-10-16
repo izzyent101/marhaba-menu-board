@@ -64,6 +64,10 @@ export function sceneLighting(scene:SolarScene) {
 /** A review clock spans one local solar day, including seasonal/DST offsets.
  * It never changes the system clock, saved settings, or the normal live clock. */
 export function solarPreviewWindow(now=new Date()) {
-  const noon=SunCalc.getTimes(now,44.9778,-93.265).solarNoon.getTime();
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+  const part=(type:string)=>Number(parts.find(value=>value.type===type)!.value);
+  // Anchor inside the Minneapolis calendar day, even just after local midnight.
+  const anchor=new Date(Date.UTC(part('year'),part('month')-1,part('day'),18));
+  const noon=SunCalc.getTimes(anchor,44.9778,-93.265).solarNoon.getTime();
   return {start:noon-9*3600000,end:noon+10*3600000};
 }

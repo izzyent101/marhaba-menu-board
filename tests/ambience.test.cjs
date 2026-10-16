@@ -108,3 +108,10 @@ test('night labels fade continuously and retain custom colors',()=>{
   assert.ok(values.every((value,index)=>index===0||value-values[index-1]<40),'no abrupt ink swap');
   assert.equal(nightInk('#008844',.2),'#008844');
 });
+
+test('day preview anchors to the Minneapolis calendar date around local midnight',()=>{
+  const justAfterMidnight=solarPreviewWindow(new Date('2026-10-16T05:05:00Z'));
+  const midday=solarPreviewWindow(new Date('2026-10-16T18:00:00Z'));
+  assert.equal(justAfterMidnight.start,midday.start);
+  assert.equal(justAfterMidnight.end,midday.end);
+});
