@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { ClockConfig } from '../config';
+import { ClockConfig,INK } from '../config';
 import { WeatherConfig, useWeather } from '../weather';
 import WeatherIcon from './WeatherIcon';
 import LOGO from '../assets/logo.png';
+import { SolarScene } from '../solar';
+import { sceneAppearance } from '../sceneAppearance';
 
 interface Props {
   clock: ClockConfig;
   weather: WeatherConfig;
+  scene:SolarScene;
 }
 
 /**
- * The infotainment bar: date and live weather on the night side, the logo
- * centred on a soft glow, the time on the day side. The background sweeps
- * night-to-day left-to-right - the same idea as the original board's header.
+ * A single sheet of smoked glass. Solar lighting changes its tint without
+ * changing the actual date, clock or weather during a scene preview.
  */
-export default function ClockBar({ clock, weather: weatherConfig }: Props) {
+export default function ClockBar({ clock, weather: weatherConfig,scene }: Props) {
   const weather = useWeather(weatherConfig);
   const [now, setNow] = useState(() => new Date());
 
@@ -23,45 +25,48 @@ export default function ClockBar({ clock, weather: weatherConfig }: Props) {
     return () => window.clearInterval(timer);
   }, []);
 
-  const weekday = now.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-  const monthDay = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }).toUpperCase();
+  const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const monthDay = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   const hourMin = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   const [clockDigits, meridiem] = hourMin.split(' ');
   const seconds = String(now.getSeconds()).padStart(2, '0');
 
   const h = clock.height;
+  const glass=sceneAppearance(scene);
+  const glassStyle={height:h,'--bar-height':`${h}px`,
+    '--glass-left':glass.barLeft,'--glass-middle':glass.barMiddle,'--glass-right':glass.barRight,
+    '--glass-rim':glass.rim,'--glass-accent':glass.accent,'--glass-reflection':glass.reflection,
+    '--glass-sun':`${glass.sunX}%`
+  } as React.CSSProperties;
 
   return (
-    <div className="clock-bar" style={{ height: h }}>
-      <div className="bar-night" />
-      <div className="bar-day" />
+    <div className="clock-bar" style={glassStyle}>
 
       <div className="clock-left">
         <div className="clock-date-stack">
-          <span className="clock-weekday" style={{ fontSize: h * 0.19, letterSpacing: '0.3em' }}>
+          <span className="clock-weekday" style={{ fontSize: h * 0.16 }}>
             {weekday}
           </span>
-          <span className="clock-date" style={{ color: clock.dateColor, fontSize: h * 0.3 }}>
+          <span className="clock-date" style={{ color: clock.dateColor===INK.ivory?'#f7f5ee':clock.dateColor, fontSize: h * 0.30 }}>
             {monthDay}
           </span>
         </div>
 
         {weather && (
-          <div className="weather" style={{ marginLeft: h * 0.42, height: h * 0.78, padding: `0 ${h * 0.22}px` }}>
-            <WeatherIcon condition={weather.condition} isDay={weather.isDay} size={h * 0.58} />
-            <span className="weather-temp" style={{ fontSize: h * 0.38 }}>
+          <div className="weather" style={{ marginLeft: h * 0.34, paddingLeft:h * 0.34 }}>
+            <WeatherIcon condition={weather.condition} isDay={scene.altitude>-.01} size={h * 0.38} />
+            <span className="weather-temp" style={{ fontSize: h * 0.32 }}>
               {weather.temperature}
               <sup>°</sup>
             </span>
-            <span className="weather-divider" style={{ height: h * 0.42 }} />
             <span className="weather-meta">
               <span className="weather-desc" style={{ fontSize: h * 0.15 }}>
                 {weather.description}
               </span>
               {weatherConfig.showRange && (
-                <span className="weather-range" style={{ fontSize: h * 0.145 }}>
-                  <i className="hi">▲</i> {weather.high}°&ensp;<i className="lo">▼</i> {weather.low}°
+                <span className="weather-range" style={{ fontSize: h * 0.135 }}>
+                  <span>H {weather.high}°</span><span>L {weather.low}°</span>
                 </span>
               )}
             </span>
@@ -75,22 +80,22 @@ export default function ClockBar({ clock, weather: weatherConfig }: Props) {
             className="clock-logo"
             src={LOGO}
             alt="Marhaba Grill"
-            style={{ height: h * (clock.logoScale || 0.8) }}
+            style={{ height: h * (clock.logoScale || 0.8) * .96 }}
             draggable={false}
           />
         </span>
       )}
 
-      <div className="clock-time-stack" style={{ color: clock.timeColor }}>
-        <span className="clock-time" style={{ fontSize: h * 0.44 }}>
+      <div className="clock-time-stack" style={{ color: clock.timeColor===INK.ivory?'#f7f5ee':clock.timeColor }}>
+        <span className="clock-time" style={{ fontSize: h * 0.43 }}>
           {clockDigits}
         </span>
         {clock.seconds && (
-          <span className="clock-seconds" style={{ fontSize: h * 0.2 }}>
+          <span className="clock-seconds" style={{ fontSize: h * 0.15 }}>
             :{seconds}
           </span>
         )}
-        <span className="clock-meridiem" style={{ fontSize: h * 0.2 }}>
+        <span className="clock-meridiem" style={{ fontSize: h * 0.15 }}>
           {meridiem}
         </span>
       </div>

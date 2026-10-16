@@ -227,6 +227,7 @@ export default function App() {
   const previewTime=preview?new Date(preview.start+(preview.end-preview.start)*preview.progress):null;
   const previewLabel=previewTime?new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}).format(previewTime):'';
   const scene = solarScene(preview?'auto':config.ambience, previewTime||sceneTime);
+  const appearanceScene=config.videoSrc||config.ambience==='original'?solarScene('auto',sceneTime):scene;
   const enhanced = config.ambience !== 'original' && !config.videoSrc && !sceneUnavailable;
   const labelInk=nightInk('#2c2c2c',scene.night);
   const displayConfig = useMemo(() => config.ambience !== 'original' && !config.videoSrc ? {
@@ -265,12 +266,12 @@ export default function App() {
       )}
 
       {config.clock.enabled && (
-        <ClockBar clock={{ ...config.clock, height: clockHeight }} weather={config.weather} />
+        <ClockBar clock={{ ...config.clock, height: clockHeight }} weather={config.weather} scene={appearanceScene} />
       )}
 
       <div className="stage" style={stageStyle}>
         {config.cloudHeadings && !config.overlaySrc
-          ? <CloudHeadings motion={config.ambienceMotion} />
+          ? <CloudHeadings motion={config.ambienceMotion} scene={appearanceScene} />
           : <img className="overlay" src={config.overlaySrc || HEADINGS} alt="" draggable={false} />}
         {config.logoOnSign && <img className="sign-logo" src={LOGO} alt="" draggable={false} />}
         <BoardCanvas config={displayConfig} scale={Math.max(scaleX, scaleY)} />

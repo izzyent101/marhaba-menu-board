@@ -101,12 +101,35 @@ uniform float uMoonLight;
 ${viewProjection}
 vec3 linearColor(vec3 rgb) { return pow(max(rgb,vec3(0.0)),vec3(2.2)); }
 float angleDifference(float a,float b) { return atan(sin(a-b),cos(a-b)); }
+// Roots stay fixed while each crown responds with its own spring lag. Faster,
+// much smaller frond flutter rides on an irregular shared gust, not a rigid sway.
+float windNoise(float x) {
+  float cell=floor(x),f=fract(x);f=f*f*(3.0-2.0*f);
+  return mix(fract(sin(cell*127.1)*43758.5453),fract(sin((cell+1.0)*127.1)*43758.5453),f);
+}
+vec3 palmBend(vec2 uv,float centre,float root,float crown,float width,float phase) {
+  float h=clamp((uv.y-root)/(crown-root),0.0,1.0);
+  float weight=exp(-pow((uv.x-centre)/width,4.0))*smoothstep(root,root+.012,uv.y);
+  float gust=.55+.45*windNoise(uTime*.18+phase*.13);
+  float spring=sin(uTime*.72-phase-h*.42)+.28*sin(uTime*1.13-phase*1.7);
+  float bend=h*h*(.0012+.0046*gust*spring);
+  float tips=smoothstep(.5,.94,h);
+  float flutter=sin(uTime*2.1+uv.x*510.0+uv.y*95.0+phase)*.00065*tips*gust;
+  return vec3(bend+flutter,sin(uTime*.71-phase)*h*h*.00065+flutter*.40,1.0)*weight;
+}
+vec2 canopyWind(vec2 uv) {
+  vec3 movement=palmBend(uv,.018,.245,.565,.065,.0);
+  movement+=palmBend(uv,.070,.254,.450,.043,1.1);
+  movement+=palmBend(uv,.129,.258,.388,.048,2.4)*.75;
+  movement+=palmBend(uv,.204,.258,.331,.062,3.5)*.45;
+  movement+=palmBend(uv,.280,.258,.292,.038,4.6)*.25;
+  return movement.xy/max(1.0,movement.z);
+}
 void main() {
   vec2 uv=vUV;
   vec3 ray=viewRay(uv);
-  float canopy=(1.0-smoothstep(.23,.34,uv.x))*smoothstep(HORIZON+.02,.60,uv.y);
-  vec2 wind=vec2((sin(uTime*.51+uv.y*19.0)+.35*sin(uTime*.83+uv.x*31.0))*.0012,
-    sin(uTime*.44+uv.x*23.0)*.00035)*canopy;
+  vec2 wind=vec2(0.0);
+  if(uv.x<.37&&uv.y>.245&&uv.y<.65)wind=canopyWind(uv);
   float canopyTop=HORIZON+.36*exp(-uv.x*6.5);
   float clearSky=smoothstep(canopyTop+.025,canopyTop+.11,uv.y);
   float height=smoothstep(HORIZON,HORIZON+.55,uv.y);
@@ -137,6 +160,10 @@ void main() {
   sky+=afterglow*exp(-max(0.0,ray.y)*4.0)*mix(vec3(.004,.007,.023),vec3(.19,.044,.007),sunward);
   sky+=vec3(.0018,.0040,.012)+horizonGlow*vec3(.001,.002,.004);
 
+  float nocturnal=1.0-smoothstep(-.17,-.025,uAltitude);
+  // Night is a separately exposed celestial scene: rich indigo, luminous stars
+  // and visible moonlit surfaces, rather than a dimmed daytime photograph.
+  sky+=nocturnal*(vec3(.004,.008,.024)+horizonGlow*vec3(.008,.012,.028));
   float starsVisible=1.0-smoothstep(-.24,-.075,uAltitude);
   if(starsVisible>.001){
   vec3 night=texture2D(uNightSky,uv).rgb;
@@ -148,10 +175,12 @@ void main() {
   // Only celestial detail is sampled from the old night artwork, never its clouds,
   // trees or baked-in moon. It remains behind the moving photographic cloud field.
   float removeBakedMoon=smoothstep(.026,.046,length((uv-vec2(.897,.570))*vec2(1.0,.5625)));
-  float stars=pow(max(0.0,starLuma-starBackground),1.5)*removeBakedMoon;
-  float galaxyBand=exp(-pow((uv.x-(.38-.37*uv.y))/.12,2.0));
-  float galaxy=smoothstep(.025,.19,starBackground)*galaxyBand*(1.0-smoothstep(-.26,-.14,uAltitude));
-  sky+=(stars*vec3(.14,.19,.29)+galaxy*vec3(.014,.017,.033))*starsVisible;
+  float stars=pow(max(0.0,starLuma-starBackground),1.22)*removeBakedMoon;
+  float galaxyBand=exp(-pow((uv.x-(.50-.50*uv.y))/.15,2.0));
+  float galaxyVisibility=1.0-smoothstep(-.26,-.13,uAltitude);
+  vec3 galaxyColor=pow(max(night,vec3(0.0)),vec3(1.65))*vec3(.72,.87,1.22);
+  float twinkle=.96+.04*sin(uTime*.85+uv.x*573.0+uv.y*263.0);
+  sky+=(stars*twinkle*vec3(.30,.39,.58)+galaxyColor*galaxyBand*galaxyVisibility*.82)*starsVisible;
   }
 
   vec3 cloudAmbient=vec3(.003,.006,.013)+uAmbient*vec3(.34,.42,.55)+uMoonLight*vec3(.13,.17,.26);
@@ -159,6 +188,8 @@ void main() {
   vec3 cloudSun=mix(uSunColor,vec3(1.0,.34,.10),warmClouds*.48)*uDirect;
   cloudSun+=warmClouds*exp(-pow((uAltitude+.01)/.10,2.0))*vec3(.19,.058,.012);
   vec3 cloudColor=(cloudAmbient+cloudSun*.72)*mix(.70,1.0,cloudDensity);
+  float cloudRim=cloudDensity*(1.0-cloudDensity)*4.0;
+  cloudColor+=nocturnal*(vec3(.006,.012,.025)+cloudRim*vec3(.016,.027,.053));
   sky=mix(sky,cloudColor,cloudAlpha);
 
   // Direct solar disc and lunar phase follow the same directions as their water
@@ -192,7 +223,7 @@ void main() {
   vec3 albedo=mix(linearColor(neutral),linearColor(photograph),smoothstep(HORIZON-.003,HORIZON+.005,uv.y));
   float nightAdaptation=1.0-smoothstep(-.17,.02,uAltitude);
   albedo=mix(albedo,vec3(luminance(albedo)),nightAdaptation*.55);
-  vec3 illumination=vec3(.004,.008,.018)+uAmbient*vec3(.31,.41,.56)+uSunColor*uDirect*.92+
+  vec3 illumination=vec3(.004,.008,.018)+nocturnal*vec3(.016,.028,.065)+uAmbient*vec3(.31,.41,.56)+uSunColor*uDirect*.92+
     uMoonLight*vec3(.17,.23,.34);
   vec3 landAndSea=albedo*illumination;
   float sunWidth=.045+depth*.19,moonWidth=.035+depth*.13;
@@ -201,7 +232,9 @@ void main() {
   float movingFoam=smoothstep(.25,.82,luma);
   float reflectionMask=sea*(1.0-smoothstep(HORIZON-.004,HORIZON+.002,uv.y));
   landAndSea+=reflectionMask*movingFoam*(sunPath*uSunColor*uDirect*.30+
-    moonPath*uMoonLight*vec3(.13,.18,.27));
+    moonPath*uMoonLight*vec3(.35,.48,.65));
+  float silverFoam=pow(smoothstep(.42,.88,luma),2.0);
+  landAndSea+=reflectionMask*nocturnal*silverFoam*vec3(.042,.057,.082);
   vec3 color=mix(landAndSea,sky,skyMask);
   gl_FragColor=vec4(pow(clamp(color,0.0,1.0),vec3(1.0/2.2)),1.0);
 }

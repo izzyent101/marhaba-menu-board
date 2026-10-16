@@ -111,12 +111,13 @@ export default function WeatherIcon({ condition, isDay, size }: Props) {
       return (
         <svg {...common}>
           {defs}
-          <g className="wx-rays wx-rays-sm">
+          {isDay ? <><g className="wx-rays wx-rays-sm">
             {Array.from({ length: 8 }, (_, i) => (
               <line key={i} x1="24" y1="4" x2="24" y2="9" transform={`rotate(${i * 45} 24 22)`} />
             ))}
           </g>
-          <circle className="wx-sun" cx="24" cy="22" r="9" fill="url(#wxSun)" />
+          <circle className="wx-sun" cx="24" cy="22" r="9" fill="url(#wxSun)" /></> :
+            <path fill="url(#wxMoon)" d="M29 7a16 16 0 1 0 13 26A17 17 0 0 1 29 7z" />}
           {cloud(1, 6)}
         </svg>
       );

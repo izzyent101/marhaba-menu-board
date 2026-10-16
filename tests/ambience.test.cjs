@@ -115,3 +115,25 @@ test('day preview anchors to the Minneapolis calendar date around local midnight
   assert.equal(justAfterMidnight.start,midday.start);
   assert.equal(justAfterMidnight.end,midday.end);
 });
+
+const {sceneAppearance}=load('src/sceneAppearance.ts');
+test('header and cloud material share warm sunset and cool night lighting',()=>{
+  const day=sceneAppearance(solarScene('day')),sunset=sceneAppearance(solarScene('sunset')),night=sceneAppearance(solarScene('night'));
+  assert.notEqual(day.barLeft,night.barLeft);
+  assert.notEqual(sunset.barRight,day.barRight);
+  assert.ok(sunset.cloudLight[0]>sunset.cloudLight[2],'sunset cloud rims are warm');
+  assert.ok(night.cloudLight[2]>night.cloudLight[0],'night cloud rims are cool');
+  assert.ok(night.cloudMid[2]>night.cloudMid[0],'internal cloud shadows preserve blue depth');
+  assert.equal(day.night,0);assert.equal(night.night,1);
+});
+test('glass and cloud shading stay continuous through twilight and azimuth wrap',()=>{
+  for(const altitude of [-.17,-.10,-.015,0,.025,.16,.4]){
+    const scene={...solarScene('day'),altitude};
+    const a=sceneAppearance({...scene,altitude:altitude-.00001}),b=sceneAppearance({...scene,altitude:altitude+.00001});
+    for(const key of ['cloudShadow','cloudMid','cloudLight']){
+      assert.ok(a[key].every((value,index)=>Math.abs(value-b[key][index])<.001));
+    }
+  }
+  const night={...solarScene('night'),moonAzimuth:-.3};
+  assert.equal(sceneAppearance({...night,azimuth:Math.PI-.001}).sunX,sceneAppearance({...night,azimuth:-Math.PI+.001}).sunX);
+});

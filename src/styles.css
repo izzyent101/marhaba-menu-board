@@ -45,203 +45,46 @@ body,
   pointer-events: none;
 }
 
-/* ---------- infotainment bar ---------- */
+/* ---------- scene-lit glass header ---------- */
 
 .clock-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2.2vw;
-  z-index: 5;
-  overflow: hidden;
-  background: linear-gradient(105deg, #03040c 0%, #071228 34%, #0d2148 62%, #1b3a72 100%);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  position:absolute;top:0;left:0;right:0;z-index:5;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.2vw;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  background:linear-gradient(110deg,var(--glass-left),var(--glass-middle) 50%,var(--glass-right));
+  -webkit-backdrop-filter:blur(28px) saturate(105%);
+  backdrop-filter:blur(28px) saturate(105%);
+  box-shadow:0 2px 12px #07121d1a;
 }
-
-/* faint starfield on the night side */
-.bar-night {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(1px 1px at 8% 30%, rgba(255, 255, 255, 0.8) 50%, transparent 51%),
-    radial-gradient(1px 1px at 16% 68%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 24% 22%, rgba(255, 255, 255, 0.65) 50%, transparent 51%),
-    radial-gradient(1px 1px at 33% 55%, rgba(255, 255, 255, 0.4) 50%, transparent 51%),
-    radial-gradient(1px 1px at 41% 35%, rgba(255, 255, 255, 0.55) 50%, transparent 51%);
-  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 38%, transparent 62%);
-  mask-image: linear-gradient(90deg, #000 0%, #000 38%, transparent 62%);
-  pointer-events: none;
+.clock-bar::before {
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at var(--glass-sun) -80%,var(--glass-reflection),transparent 75%),linear-gradient(#ffffff08,transparent 65%);
 }
-
-/* warm dawn wash on the day side */
-.bar-day {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 55%, rgba(88, 128, 196, 0.28) 78%, rgba(140, 170, 220, 0.34) 100%);
-  pointer-events: none;
-}
-
-/* hairline divider, bright in the middle like the sign's rule */
 .clock-bar::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45) 50%, transparent);
+  content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:linear-gradient(90deg,#ffffff0d,var(--glass-rim),#ffffff0d);
 }
-
-.clock-left {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.clock-date-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.14em;
-  line-height: 1;
-}
-
-.clock-weekday {
-  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
-  font-weight: 600;
-  color: #8fa8c9;
-}
-
-.clock-date {
-  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
-}
-
-.logo-wrap {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.logo-wrap::before {
-  content: '';
-  position: absolute;
-  width: 160%;
-  height: 160%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(120, 160, 220, 0.28), transparent);
-}
-
-.clock-logo {
-  position: relative;
-  width: auto;
-  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.6));
-}
-
-.clock-time-stack {
-  display: flex;
-  align-items: baseline;
-  gap: 0.16em;
-  line-height: 1;
-  position: relative;
-  z-index: 1;
-  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
-  font-weight: 600;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
-}
-
-.clock-time {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.03em;
-}
-
-.clock-seconds {
-  font-variant-numeric: tabular-nums;
-  opacity: 0.55;
-}
-
-.clock-meridiem {
-  letter-spacing: 0.18em;
-  opacity: 0.85;
-}
-
-/* ---------- weather capsule ---------- */
-
-.weather {
-  display: flex;
-  align-items: center;
-  gap: 0.55em;
-  line-height: 1;
-  border-radius: 999px;
-  background: rgba(10, 20, 38, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(6px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 4px 14px rgba(0, 0, 0, 0.3);
-}
-
-.weather-temp {
-  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
-  font-weight: 600;
-  color: #f4f8ff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-}
-
-.weather-temp sup {
-  font-size: 0.55em;
-  vertical-align: 0.5em;
-  opacity: 0.85;
-}
-
-.weather-divider {
-  width: 1px;
-  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
-}
-
-.weather-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.32em;
-}
-
-.weather-desc {
-  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  color: #dbe7f6;
-  white-space: nowrap;
-}
-
-.weather-range {
-  font-family: Cinzel, 'Copperplate Gothic Light', Copperplate, Georgia, serif;
-  letter-spacing: 0.1em;
-  color: #9db3cf;
-  white-space: nowrap;
-}
-
-.weather-range .hi,
-.weather-range .lo {
-  font-style: normal;
-  font-size: 0.75em;
-}
-
-.weather-range .hi {
-  color: #ffb454;
-}
-
-.weather-range .lo {
-  color: #7cc4ff;
-}
+.clock-left { display:flex;align-items:center;min-width:0;position:relative;z-index:1; }
+.clock-date-stack { display:flex;flex-direction:column;gap:calc(var(--bar-height) * .075);line-height:1; }
+.clock-weekday { color:var(--glass-accent);font-weight:500;letter-spacing:.045em; }
+.clock-date { font-weight:450;letter-spacing:-.025em; }
+.logo-wrap { position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;pointer-events:none;z-index:1; }
+.clock-logo { display:block;width:auto;filter:drop-shadow(0 1px 2px #0003); }
+.clock-time-stack { display:flex;align-items:baseline;gap:0;line-height:1;position:relative;z-index:1;font-weight:400; }
+.clock-time { font-variant-numeric:tabular-nums;letter-spacing:-.035em; }
+.clock-seconds { font-variant-numeric:tabular-nums;min-width:2.2em;margin-left:.22em;opacity:.48; }
+.clock-meridiem { margin-left:.5em;letter-spacing:.045em;font-weight:500;opacity:.68; }
+.weather { display:flex;align-items:center;gap:calc(var(--bar-height) * .105);line-height:1;position:relative; }
+.weather::before { content:'';position:absolute;left:0;top:8%;height:84%;width:1px;background:#ffffff24; }
+.weather-temp { color:#f7f5ee;font-weight:400;letter-spacing:-.045em;font-variant-numeric:tabular-nums; }
+.weather-temp sup { font-size:.6em;vertical-align:.45em;opacity:.8; }
+.weather-meta { display:flex;flex-direction:column;gap:calc(var(--bar-height) * .075);margin-left:calc(var(--bar-height) * .035); }
+.weather-desc { color:#eeeff0;font-weight:450;letter-spacing:.015em;white-space:nowrap; }
+.weather-range { display:flex;gap:.8em;color:var(--glass-accent);font-weight:400;letter-spacing:.015em;white-space:nowrap;opacity:.8; }
+.clock-bar .wx { filter:none;opacity:.9; }
+@media (prefers-reduced-motion:reduce) { .clock-bar .wx * {animation:none!important} }
 
 /* ---------- sign stage ---------- */
 
@@ -580,38 +423,6 @@ button.danger {
 }
 
 /* ---------- animated weather ---------- */
-
-.weather {
-  display: flex;
-  align-items: center;
-  gap: 0.55em;
-  line-height: 1;
-}
-
-.weather-temp {
-  font-family: Cinzel, "Copperplate Gothic Light", Copperplate, Georgia, serif;
-  font-weight: 600;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
-}
-
-.weather-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.18em;
-}
-
-.weather-desc {
-  font-family: Cinzel, "Copperplate Gothic Light", Copperplate, Georgia, serif;
-  letter-spacing: 0.1em;
-  opacity: 0.9;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
-}
-
-.weather-range {
-  letter-spacing: 0.08em;
-  opacity: 0.6;
-  font-family: Cinzel, "Copperplate Gothic Light", Copperplate, Georgia, serif;
-}
 
 .wx {
   overflow: visible;

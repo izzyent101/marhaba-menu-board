@@ -2,7 +2,7 @@
 
 The v2.4 renderer retains the owner's original beach composition, surf loop and cloud heading artwork. The hours sit at x=210, with the entire block above the original tree line.
 
-The old picture dissolve is removed. One daytime photograph supplies the foliage silhouette and cloud density at every time of day. Lighting changes on that same geometry. The night illustration supplies only extracted stars, a faint Milky Way, and a small lunar surface sample; its alternate clouds, tree shapes and baked-in moon never replace the daytime composition.
+The old picture dissolve is removed. One daytime photograph supplies the foliage silhouette and cloud density at every time of day. Lighting changes on that same geometry. The night illustration supplies only extracted stars, a luminous Milky Way, and a small lunar surface sample; its alternate clouds, tree shapes and baked-in moon never replace the daytime composition.
 
 ## Solar clock
 
@@ -20,6 +20,14 @@ References for the scattering model and terminology:
 
 - Eric Bruneton, [Precomputed Atmospheric Scattering: a New Implementation](https://ebruneton.github.io/precomputed_atmospheric_scattering/). The implementation here is a smaller single-scattering integration, not Bruneton's full model or precomputed multiple-scattering algorithm.
 - Three.js [Sky shader source](https://github.com/mrdoob/three.js/blob/dev/examples/jsm/objects/Sky.js), an established practical atmospheric renderer. No Three.js runtime is bundled.
+
+## Scene materials and wind
+
+The header uses one edge-to-edge sheet of smoked glass with background blur and a single fine bottom edge. Its neutral tint moves continuously from daylight through warm twilight to deep blue night. Date, weather and time use a clean sans-serif hierarchy; the brand remains unboxed and stationary. The actual clock, saved colors and weather data remain independent of scene previews.
+
+Cloud lettering keeps the existing photographic volume and alpha channel. A continuous three-point RGB transfer shades recesses, midtones and bright rims separately: neutral daylight, warm sunset, and cool moonlight. This changes the material rather than placing a brightness wash over it.
+
+Five canopy regions share irregular gusts with different spring phases. A quadratic height envelope anchors roots, allows larger crown movement, and adds smaller, faster frond flutter. This is a photographic displacement approximation, not a full 3D tree simulation. Original filmed surf remains the source of every breaking wave. Night exposure adds blue ambient light, restrained star twinkle, cloud rims and silver highlights derived from the moving surf's foam.
 
 ## Validation
 
