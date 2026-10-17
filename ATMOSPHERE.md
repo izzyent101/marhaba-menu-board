@@ -23,7 +23,7 @@ References for the scattering model and terminology:
 
 ## Scene materials and wind
 
-The header uses one edge-to-edge sheet of smoked glass with background blur and a single fine bottom edge. Its neutral tint moves continuously from daylight through warm twilight to deep blue night. Date, weather and time use a clean sans-serif hierarchy; the brand remains unboxed and stationary. The actual clock, saved colors and weather data remain independent of scene previews.
+The header uses one edge-to-edge sheet of smoked glass with background blur and a single fine bottom edge. Its neutral tint moves continuously from daylight through warm twilight to deep blue night. The date uses Cormorant Garamond, weather uses Manrope with Rajdhani temperature digits, and the clock uses seven-segment vector numerals. Beveled ivory bars, faint inactive segments, a two-dot colon and a gold AM/PM marker match the supplied clock reference. Hours omit a leading zero; seconds follow the saved visibility setting. The brand remains unboxed and stationary. The actual clock, saved colors and weather data remain independent of scene previews.
 
 Cloud lettering keeps the existing photographic volume and alpha channel. A continuous three-point RGB transfer shades recesses, midtones and bright rims separately: neutral daylight, warm sunset, and cool moonlight. This changes the material rather than placing a brightness wash over it.
 

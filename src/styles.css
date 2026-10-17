@@ -73,13 +73,14 @@ body,
 .logo-wrap { position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;pointer-events:none;z-index:1; }
 .clock-logo { display:block;width:auto;filter:drop-shadow(0 1px 2px #0003); }
 .clock-time-stack { display:flex;align-items:center;gap:calc(var(--bar-height) * .115);line-height:1;position:relative;z-index:1; }
-.clock-time { display:flex;align-items:center;font-family:Rajdhani,"Arial Narrow",sans-serif;font-weight:500;font-variant-numeric:lining-nums tabular-nums;letter-spacing:.01em;line-height:.9; }
-.clock-colon { display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.14em;width:.22em;height:.6em;margin-top:-.02em;opacity:.8; }
-.clock-colon i { display:block;width:.065em;height:.065em;background:currentColor;border-radius:1px; }
-.clock-subdial { display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--bar-height) * .07);padding-top:calc(var(--bar-height) * .015); }
-.clock-subdial-no-seconds { align-self:flex-end;padding-bottom:calc(var(--bar-height) * .055); }
-.clock-seconds { font-family:Rajdhani,"Arial Narrow",sans-serif;font-weight:500;font-variant-numeric:lining-nums tabular-nums;letter-spacing:.045em;min-width:1.1em;opacity:.62; }
-.clock-meridiem { letter-spacing:.15em;font-weight:500;opacity:.74; }
+.clock-time { display:flex;align-items:center;gap:calc(var(--bar-height) * .035); }
+.segment-digits { display:block;flex-shrink:0;overflow:visible;fill:currentColor; }
+.segment-off { opacity:.045; }
+.clock-colon { display:block;flex-shrink:0;fill:currentColor;opacity:.8; }
+.clock-subdial { display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;align-self:stretch;padding:calc(var(--bar-height) * .025) 0; }
+.clock-subdial-no-seconds { justify-content:flex-end; }
+.clock-seconds { display:block;opacity:.56; }
+.clock-meridiem { color:#dbc180;letter-spacing:.12em;font-weight:500;line-height:1; }
 .weather { display:flex;align-items:center;gap:calc(var(--bar-height) * .105);line-height:1;position:relative; }
 .weather::before { content:'';position:absolute;left:0;top:8%;height:84%;width:1px;background:#ffffff24; }
 .weather-temp { color:#f7f5ee;font-family:Rajdhani,"Arial Narrow",sans-serif;font-weight:500;letter-spacing:0;font-variant-numeric:lining-nums tabular-nums; }

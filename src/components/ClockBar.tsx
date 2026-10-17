@@ -5,6 +5,7 @@ import WeatherIcon from './WeatherIcon';
 import LOGO from '../assets/logo.png';
 import { SolarScene } from '../solar';
 import { sceneAppearance } from '../sceneAppearance';
+import SegmentDigits from './SegmentDigits';
 
 interface Props {
   clock: ClockConfig;
@@ -28,7 +29,7 @@ export default function ClockBar({ clock, weather: weatherConfig,scene }: Props)
   const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
   const monthDay = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
-  const hourMin = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const hourMin = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   const [clockDigits, meridiem] = hourMin.split(' ');
   const [hours, minutes] = clockDigits.split(':');
   const seconds = String(now.getSeconds()).padStart(2, '0');
@@ -88,12 +89,16 @@ export default function ClockBar({ clock, weather: weatherConfig,scene }: Props)
       )}
 
       <time className="clock-time-stack" dateTime={now.toISOString()} aria-label={`${clockDigits}${clock.seconds?`:${seconds}`:''} ${meridiem}`} style={{ color: clock.timeColor===INK.ivory?'#f7f5ee':clock.timeColor }}>
-        <span className="clock-time" aria-hidden="true" style={{ fontSize: h * 0.66 }}>
-          <span>{hours}</span><span className="clock-colon"><i/><i/></span><span>{minutes}</span>
+        <span className="clock-time" aria-hidden="true">
+          <SegmentDigits value={hours} height={h * 0.60} />
+          <svg className="clock-colon" viewBox="0 0 12 80" width={h * 0.09} height={h * 0.60}>
+            <circle cx="6" cy="28" r="2.5"/><circle cx="6" cy="52" r="2.5"/>
+          </svg>
+          <SegmentDigits value={minutes} height={h * 0.60} />
         </span>
         <span className={`clock-subdial ${clock.seconds?'':'clock-subdial-no-seconds'}`} aria-hidden="true">
-          {clock.seconds && <span className="clock-seconds" style={{ fontSize: h * 0.26 }}>
-            {seconds}
+          {clock.seconds && <span className="clock-seconds">
+            <SegmentDigits value={seconds} height={h * 0.20} />
           </span>}
           <span className="clock-meridiem" style={{ fontSize: h * 0.12 }}>
             {meridiem}
